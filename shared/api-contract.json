@@ -1,0 +1,46 @@
+{
+    "api_base_url": "http://localhost:5000/api",
+    "endpoints": {
+        "auth": {
+            "POST /auth/login": {
+                "description": "Login user",
+                "body_params": [
+                    "email",
+                    "password"
+                ],
+                "response_example": {
+                    "token": "...",
+                    "user": {
+                        "id": "...",
+                        "role": "player"
+                    }
+                }
+            }
+        },
+        "learning": {
+            "GET /learning/modules": {
+                "description": "Get list of learning modules (For Dev B)",
+                "response_example": [
+                    {
+                        "_id": "mod_1",
+                        "title": "Intro to Variables",
+                        "difficulty": "easy",
+                        "xpReward": 50
+                    }
+                ]
+            }
+        },
+        "competitions": {
+            "GET /competitions/active": {
+                "description": "Get active tournaments (For Dev C)",
+                "response_example": [
+                    {
+                        "_id": "comp_1",
+                        "name": "Weekly Code Sprint",
+                        "type": "leaderboard"
+                    }
+                ]
+            }
+        }
+    }
+}
