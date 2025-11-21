@@ -32,7 +32,7 @@ const QuickStats = ({ darkMode }) => {
   const [loading, setLoading] = useState(true);
 
   // 3. PASTE YOUR MONGODB ID HERE!
-  const DEMO_USER_ID = "691fb49e1dd8ef0e9a27b3c8";
+  const DEMO_USER_ID = "64f2a9c8e4b0d123456789ab"; // Just the hex string
 
   // 4. ADDED: The Logic to fetch from your Backend
   useEffect(() => {
