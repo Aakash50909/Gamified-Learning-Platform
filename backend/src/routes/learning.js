@@ -1,56 +1,48 @@
 const router = require("express").Router();
-const User = require("../models/User");
-const DSAProgress = require("../models/DSAProgress");
+const User = require("../models/User"); // Import the Real DB Model
 
-// GET /api/learning/progress - Get user learning progress
-router.get("/progress", async (req, res) => {
+// GET: Fetch Modules (Keep this simple for now)
+router.get("/modules", (req, res) => {
+  res.json([
+    { id: "mod_1", title: "Intro to Variables", xpReward: 50 },
+    { id: "mod_2", title: "Loops & Logic", xpReward: 100 },
+  ]);
+});
+
+// POST: Complete a Module & Earn XP (THE REAL LOGIC)
+router.post("/complete", async (req, res) => {
+  const { userId, xpAmount } = req.body;
+
   try {
-    const { userId } = req.query;
+    // 1. Find the user in the Real Cloud Database
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ error: "User not found" });
 
-    if (!userId) {
-      return res.status(400).json({ error: "userId is required" });
-    }
+    // 2. Update their XP
+    user.xp += xpAmount;
 
-    // Use findById with string ID (no ObjectId conversion needed)
-    const user = await User.findById(userId).select(
-      "username avatar dsaPoints dsaRank dsaStats"
-    );
+    // 3. Save to MongoDB Atlas
+    await user.save();
 
-    if (!user) {
-      return res.status(404).json({ error: "User not found" });
-    }
-
-    // Get completed problems count
-    const completedProblems = await DSAProgress.countDocuments({
-      userId,
-      completed: true,
-    });
-
-    // Calculate streak (simplified - you can enhance this)
-    const recentActivity = await DSAProgress.find({
-      userId,
-      completed: true,
-    })
-      .sort({ completedAt: -1 })
-      .limit(7)
-      .select("completedAt");
-
-    res.json({
-      username: user.username,
-      avatar: user.avatar || "ninja",
-      points: user.dsaPoints || 0,
-      rank: user.dsaRank || 0,
-      stats: user.dsaStats || {
-        easyCompleted: 0,
-        mediumCompleted: 0,
-        hardCompleted: 0,
-        totalCompleted: 0,
-      },
-      completedProblems: completedProblems,
-      streak: recentActivity.length,
-    });
+    res.json({ message: "XP Updated", newXP: user.xp });
   } catch (err) {
-    console.error("Learning Progress API Error:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+const User = require("../models/User"); // Make sure User model is imported
+
+// GET /api/auth/profile/:id
+// This lets the frontend fetch real stats
+router.get("/profile/:id", async (req, res) => {
+  try {
+    // 1. Look up user by ID in MongoDB
+    const user = await User.findById(req.params.id);
+
+    if (!user) return res.status(404).json({ error: "User not found" });
+
+    // 2. Send back the REAL data
+    res.json(user);
+  } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });

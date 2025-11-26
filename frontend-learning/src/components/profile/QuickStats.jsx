@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import {
   TrendingUp,
   Zap,
@@ -118,6 +119,7 @@ const QuickStats = ({ darkMode }) => {
       </h3>
 
       <div className="space-y-4">
+        {/* REAL DATA: stats.xp */}
         <StatItem
           icon={Zap}
           label="Total XP"
@@ -125,6 +127,8 @@ const QuickStats = ({ darkMode }) => {
           color="text-purple-500"
           darkMode={darkMode}
         />
+
+        {/* REAL DATA: stats.level */}
         <StatItem
           icon={Crown}
           label="Level"
@@ -132,6 +136,8 @@ const QuickStats = ({ darkMode }) => {
           color="text-yellow-500"
           darkMode={darkMode}
         />
+
+        {/* Fallback Data: Your DB doesn't have 'streak' yet, so we default to 0 */}
         <StatItem
           icon={Flame}
           label="Current Streak"
@@ -139,6 +145,8 @@ const QuickStats = ({ darkMode }) => {
           color="text-orange-500"
           darkMode={darkMode}
         />
+
+        {/* Fallback Data: Your DB doesn't have 'rank' yet */}
         <StatItem
           icon={Trophy}
           label="Global Rank"
@@ -146,6 +154,7 @@ const QuickStats = ({ darkMode }) => {
           color="text-blue-500"
           darkMode={darkMode}
         />
+
         <StatItem
           icon={Award}
           label="Badges Earned"
@@ -153,6 +162,7 @@ const QuickStats = ({ darkMode }) => {
           color="text-pink-500"
           darkMode={darkMode}
         />
+
         <StatItem
           icon={Book}
           label="Quizzes Done"
