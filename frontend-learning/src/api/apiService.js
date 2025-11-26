@@ -1,8 +1,8 @@
-const API_BASE_URL = "/api";
+export const API_BASE_URL = "http://localhost:5000/api";
 
 const apiService = {
   async fetchLearningData() {
-    const response = await fetch(`${API_BASE_URL}/learning`, {
+    const response = await fetch(`${API_BASE_URL}/learning/modules`, {
       headers: {
         "Content-Type": "application/json",
       },

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
   Trophy,
   Book,
@@ -9,26 +9,17 @@ import {
   Flame,
   LogOut,
 } from "lucide-react";
-import { mockRewardsAPI } from "../../hooks/useRewards";
-import { userData } from "../../api/mockData";
 import { useAuth } from "../../contexts/AuthContext";
+import { useUserData } from "../../hooks/useUserData";
 
 const Navbar = ({ darkMode, setDarkMode, currentView, setCurrentView }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [coins, setCoins] = useState(1200);
-  const { user, logout } = useAuth();
+  const { logout } = useAuth();
+  const { userData } = useUserData();
 
-  useEffect(() => {
-    const fetchCoins = async () => {
-      try {
-        const rewardsData = await mockRewardsAPI.getRewards();
-        setCoins(rewardsData.coins);
-      } catch (err) {
-        console.log("Using default coins");
-      }
-    };
-    fetchCoins();
-  }, []);
+  // Use real user data for coins (DSA points) and streak
+  const coins = userData?.dsaPoints || 0;
+  const streak = userData?.streak || 0;
 
   const handleLogout = () => {
     if (window.confirm("Are you sure you want to logout?")) {
@@ -119,14 +110,22 @@ const Navbar = ({ darkMode, setDarkMode, currentView, setCurrentView }) => {
               <span className="font-medium">Analytics</span>
             </button>
 
-            <div className="flex items-center space-x-2 px-3 py-2 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-lg">
+            {/* Coins (DSA Points) */}
+            <div
+              className="flex items-center space-x-2 px-3 py-2 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-lg cursor-pointer hover:scale-105 transition-transform"
+              title={`Total DSA Points: ${coins}`}>
               <span className="text-2xl">🪙</span>
-              <span className="font-bold text-white">{coins}</span>
+              <span className="font-bold text-white">
+                {coins.toLocaleString()}
+              </span>
             </div>
 
-            <div className="flex items-center space-x-2 px-3 py-2 bg-gradient-to-r from-orange-500 to-red-500 rounded-lg">
+            {/* Streak */}
+            <div
+              className="flex items-center space-x-2 px-3 py-2 bg-gradient-to-r from-orange-500 to-red-500 rounded-lg cursor-pointer hover:scale-105 transition-transform"
+              title={`${streak} day streak`}>
               <Flame className="w-4 h-4 text-white" />
-              <span className="font-bold text-white">{userData.streak}</span>
+              <span className="font-bold text-white">{streak}</span>
             </div>
 
             <div className="flex items-center space-x-2">
@@ -150,16 +149,22 @@ const Navbar = ({ darkMode, setDarkMode, currentView, setCurrentView }) => {
 
           {/* Mobile Navigation */}
           <div className="flex lg:hidden items-center space-x-2">
-            <div className="flex items-center space-x-1 px-2 py-1 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-lg">
+            {/* Coins (DSA Points) - Mobile */}
+            <div
+              className="flex items-center space-x-1 px-2 py-1 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-lg"
+              title={`Total DSA Points: ${coins}`}>
               <span className="text-lg">🪙</span>
-              <span className="font-bold text-white text-sm">{coins}</span>
+              <span className="font-bold text-white text-sm">
+                {coins > 999 ? `${(coins / 1000).toFixed(1)}k` : coins}
+              </span>
             </div>
 
-            <div className="flex items-center space-x-1 px-2 py-1 bg-gradient-to-r from-orange-500 to-red-500 rounded-lg">
+            {/* Streak - Mobile */}
+            <div
+              className="flex items-center space-x-1 px-2 py-1 bg-gradient-to-r from-orange-500 to-red-500 rounded-lg"
+              title={`${streak} day streak`}>
               <Flame className="w-3 h-3 text-white" />
-              <span className="font-bold text-white text-sm">
-                {userData.streak}
-              </span>
+              <span className="font-bold text-white text-sm">{streak}</span>
             </div>
 
             <button

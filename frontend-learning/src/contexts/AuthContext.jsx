@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
-
+const API_BASE_URL = "http://localhost:5000/api";
 const AuthContext = createContext(null);
 
 export const useAuth = () => {
@@ -30,15 +30,17 @@ export const AuthProvider = ({ children }) => {
   const login = async (email, password) => {
     try {
       // Call your backend API
-      const response = await fetch("/api/auth/login", {
+      const response = await fetch(`${API_BASE_URL}/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
       });
 
-      if (!response.ok) throw new Error("Login failed");
-
       const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Login failed");
+      }
 
       // Store token and user
       localStorage.setItem("authToken", data.token);
@@ -47,90 +49,52 @@ export const AuthProvider = ({ children }) => {
       setToken(data.token);
       setUser(data.user);
 
-      return { success: true };
+      console.log("✅ Login successful:", data.user.username);
+      return { success: true, user: data.user };
     } catch (error) {
-      // Mock login for development
-      console.log("API not available, using mock login");
-
-      const mockUser = {
-        id: "user123",
-        email: email,
-        username: "CodeNinja_Pro",
-        avatar: "ninja",
-        bio: "Passionate coder and problem solver. Love learning new algorithms and competitive programming.",
-        location: "San Francisco, CA",
-        joinedDate: "Jan 2024",
-        xp: 2450,
-        level: 12,
-        streak: 7,
-      };
-      const mockToken = "mock-jwt-token-" + Date.now();
-
-      localStorage.setItem("authToken", mockToken);
-      localStorage.setItem("user", JSON.stringify(mockUser));
-
-      setToken(mockToken);
-      setUser(mockUser);
-
-      return { success: true };
+      console.error("Login error:", error);
+      return { success: false, error: error.message };
     }
   };
 
   const signup = async (email, password, username) => {
     try {
-      const response = await fetch("/api/auth/signup", {
+      const response = await fetch(`${API_BASE_URL}/auth/signup`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password, username }),
       });
 
-      if (!response.ok) throw new Error("Signup failed");
-
       const data = await response.json();
 
+      if (!response.ok) {
+        throw new Error(data.error || "Signup failed");
+      }
+
+      // Store token and user
       localStorage.setItem("authToken", data.token);
       localStorage.setItem("user", JSON.stringify(data.user));
 
       setToken(data.token);
       setUser(data.user);
 
-      return { success: true };
+      console.log("✅ Signup successful:", data.user.username);
+      return { success: true, user: data.user };
     } catch (error) {
-      // Mock signup for development
-      console.log("API not available, using mock signup");
-
-      const mockUser = {
-        id: "user-" + Date.now(),
-        email: email,
-        username: username,
-        avatar: "robot",
-        bio: "New learner on LearnQuest!",
-        location: "Unknown",
-        joinedDate: new Date().toLocaleDateString("en-US", {
-          month: "short",
-          year: "numeric",
-        }),
-        xp: 0,
-        level: 1,
-        streak: 0,
-      };
-      const mockToken = "mock-jwt-token-" + Date.now();
-
-      localStorage.setItem("authToken", mockToken);
-      localStorage.setItem("user", JSON.stringify(mockUser));
-
-      setToken(mockToken);
-      setUser(mockUser);
-
-      return { success: true };
+      console.error("Signup error:", error);
+      return { success: false, error: error.message };
     }
   };
 
-  // NEW: Update profile function
+  // Update profile function
   const updateProfile = async (profileData) => {
+    if (!user?.id) {
+      return { success: false, error: "User not logged in" };
+    }
+
     try {
       // Call your backend API
-      const response = await fetch("/api/user/profile", {
+      const response = await fetch(`${API_BASE_URL}/user/profile/${user.id}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -144,10 +108,11 @@ export const AuthProvider = ({ children }) => {
       const data = await response.json();
 
       // Update user in state and localStorage
-      const updatedUser = { ...user, ...data.user };
+      const updatedUser = { ...user, ...profileData };
       setUser(updatedUser);
       localStorage.setItem("user", JSON.stringify(updatedUser));
 
+      console.log("✅ Profile updated successfully");
       return { success: true, user: updatedUser };
     } catch (error) {
       // Mock profile update for development
@@ -162,6 +127,52 @@ export const AuthProvider = ({ children }) => {
       localStorage.setItem("user", JSON.stringify(updatedUser));
 
       return { success: true, user: updatedUser };
+    }
+  };
+
+  // ✨ NEW: Update user stats after completing problems
+  const updateStats = (newStats) => {
+    if (user) {
+      const updatedUser = {
+        ...user,
+        dsaPoints: newStats.dsaPoints ?? user.dsaPoints,
+        dsaRank: newStats.dsaRank ?? user.dsaRank,
+        dsaStats: newStats.dsaStats ?? user.dsaStats,
+      };
+      setUser(updatedUser);
+      localStorage.setItem("user", JSON.stringify(updatedUser));
+      console.log("✅ User stats updated:", updatedUser);
+    }
+  };
+
+  // ✨ NEW: Refresh user data from server
+  const refreshUser = async () => {
+    if (!user?.id) return;
+
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/learning/progress?userId=${user.id}`
+      );
+
+      if (!response.ok) {
+        console.log("Could not fetch user progress");
+        return;
+      }
+
+      const data = await response.json();
+
+      const updatedUser = {
+        ...user,
+        dsaPoints: data.points ?? user.dsaPoints,
+        dsaRank: data.rank ?? user.dsaRank,
+        dsaStats: data.stats ?? user.dsaStats,
+      };
+
+      setUser(updatedUser);
+      localStorage.setItem("user", JSON.stringify(updatedUser));
+      console.log("✅ User data refreshed from server");
+    } catch (error) {
+      console.error("Error refreshing user data:", error);
     }
   };
 
@@ -184,7 +195,9 @@ export const AuthProvider = ({ children }) => {
     login,
     signup,
     logout,
-    updateProfile, // NEW: Add updateProfile to context
+    updateProfile,
+    updateStats, // ✨ NEW
+    refreshUser, // ✨ NEW
     getAuthHeader,
   };
 

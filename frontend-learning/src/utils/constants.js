@@ -1,7 +1,7 @@
 export const CONFIG = {
-  API_BASE_URL: "/api",
-  USE_MOCK_DATA: true, // Toggle this to switch between mock and real API
-  ENABLE_OFFLINE_MODE: true, // Fallback to mock data if API fails
+  API_BASE_URL: "http://localhost:5000/api", // ✅ Changed to backend URL
+  USE_MOCK_DATA: false, // ✅ Changed to false - use real API
+  ENABLE_OFFLINE_MODE: true, // Keep this - fallback if API fails
 };
 
 export const avatarEmojis = {

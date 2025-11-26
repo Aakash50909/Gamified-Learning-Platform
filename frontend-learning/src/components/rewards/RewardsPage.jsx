@@ -1,282 +1,299 @@
-import React, { useState } from "react";
-import { Crown, Award, Gift, ChevronRight, Sparkles } from "lucide-react";
-import { useRewards, getXPForLevel } from "../../hooks/useRewards";
-import { LoadingSpinner } from "../common/LoadingSpinner";
-import { ErrorDisplay } from "../common/ErrorDisplay";
-import { ConfettiEffect } from "../common/ConfettiEffect";
-import { avatarEmojis } from "../../api/mockData";
-import RewardStatCard from "./RewardStatCard";
-import RewardBadgeCard from "./RewardBadgeCard";
-import AvatarPickerModal from "./AvatarPickerModal";
-import ShopModal from "./ShopModal";
+import React from "react";
+import { Trophy, Target, Zap, Award, Star, Crown } from "lucide-react";
+import { useUserData } from "../../hooks/useUserData";
 
 const RewardsPage = ({ darkMode }) => {
-  const {
-    rewards,
-    loading,
-    error,
-    updateAvatar,
-    claimDaily,
-    purchaseItem,
-    refresh,
-  } = useRewards();
-  const [showAvatarPicker, setShowAvatarPicker] = useState(false);
-  const [showShop, setShowShop] = useState(false);
-  const [showConfetti, setShowConfetti] = useState(false);
-  const [claimingDaily, setClaimingDaily] = useState(false);
-
-  const handleClaimDaily = async () => {
-    setClaimingDaily(true);
-    try {
-      await claimDaily();
-      setShowConfetti(true);
-      setTimeout(() => setShowConfetti(false), 3000);
-    } catch (err) {
-      console.error("Failed to claim reward:", err);
-    } finally {
-      setClaimingDaily(false);
-    }
-  };
+  const { userData, loading } = useUserData();
 
   if (loading) {
     return (
-      <div className="space-y-8 animate-fade-in">
-        <div className="text-center space-y-2">
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-yellow-600 via-orange-500 to-purple-500 bg-clip-text text-transparent">
-            Rewards & Achievements
-          </h1>
-          <p className={`${darkMode ? "text-gray-400" : "text-gray-600"}`}>
-            Loading your rewards...
-          </p>
-        </div>
-        <LoadingSpinner />
+      <div className="flex items-center justify-center py-20">
+        <div className="text-2xl">Loading rewards...</div>
       </div>
     );
   }
 
-  if (error) {
+  if (!userData) {
     return (
-      <div className="space-y-8 animate-fade-in">
-        <div className="text-center space-y-2">
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-yellow-600 via-orange-500 to-purple-500 bg-clip-text text-transparent">
-            Rewards & Achievements
-          </h1>
-        </div>
-        <ErrorDisplay message={error} onRetry={refresh} darkMode={darkMode} />
+      <div className="text-center py-20">
+        <div>Please login to view rewards</div>
       </div>
     );
   }
 
-  const xpProgress =
-    ((rewards.xp - getXPForLevel(rewards.level)) /
-      (rewards.nextLevelXP - getXPForLevel(rewards.level))) *
-    100;
-  const earnedBadges = rewards.badges.filter((b) => b.earned);
-  const lockedBadges = rewards.badges.filter((b) => !b.earned);
+  // Generate achievements based on actual user data
+  const achievements = generateAchievements(userData);
 
   return (
-    <div className="space-y-6 sm:space-y-8 animate-fade-in">
+    <div className="max-w-7xl mx-auto space-y-8">
+      {/* Header */}
       <div className="text-center space-y-2">
-        <h1 className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-yellow-600 via-orange-500 to-purple-500 bg-clip-text text-transparent">
+        <h1 className="text-4xl font-bold bg-gradient-to-r from-yellow-600 via-orange-500 to-red-500 bg-clip-text text-transparent">
           Rewards & Achievements
         </h1>
-        <p
-          className={`text-sm sm:text-base ${
-            darkMode ? "text-gray-400" : "text-gray-600"
-          }`}>
-          Your coins, avatars, and badges
+        <p className={darkMode ? "text-gray-400" : "text-gray-600"}>
+          Unlock achievements by solving problems
         </p>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <RewardStatCard
-          icon="🪙"
-          title="Coins"
-          value={rewards.coins.toLocaleString()}
-          subtitle="Spend in shop"
-          darkMode={darkMode}
-        />
-        <RewardStatCard
-          icon={avatarEmojis[rewards.avatar.current]}
-          title="Current Avatar"
-          value={rewards.avatar.current}
-          subtitle="Click to change"
-          darkMode={darkMode}
-          onClick={() => setShowAvatarPicker(true)}
-          clickable
-        />
-        <RewardStatCard
-          icon="⚡"
-          title="Total XP"
-          value={rewards.xp.toLocaleString()}
-          subtitle={`Level ${rewards.level}`}
-          darkMode={darkMode}
-        />
-        <RewardStatCard
-          icon="🏆"
-          title="Badges"
-          value={`${earnedBadges.length}/${rewards.badges.length}`}
-          subtitle="Unlocked"
-          darkMode={darkMode}
-        />
-      </div>
-
+      {/* Points Summary */}
       <div
         className={`${
-          darkMode ? "bg-gray-800" : "bg-white"
-        } rounded-2xl p-6 shadow-xl`}>
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl sm:text-2xl font-bold flex items-center space-x-2">
-            <Crown className="w-5 h-5 sm:w-6 sm:h-6 text-yellow-500" />
-            <span>Level Progress</span>
-          </h2>
-          <div className="text-right">
-            <div className="text-2xl sm:text-3xl font-bold text-purple-500">
-              Level {rewards.level}
-            </div>
-            <div
-              className={`text-xs sm:text-sm ${
-                darkMode ? "text-gray-400" : "text-gray-600"
-              }`}>
-              {rewards.xp} / {rewards.nextLevelXP} XP
-            </div>
-          </div>
+          darkMode
+            ? "bg-gradient-to-r from-yellow-600 to-orange-700"
+            : "bg-gradient-to-r from-yellow-100 to-orange-100"
+        } rounded-2xl p-8 text-center`}>
+        <Trophy className="w-16 h-16 text-yellow-500 mx-auto mb-4" />
+        <div className="text-5xl font-bold text-yellow-500 mb-2">
+          {userData.dsaPoints.toLocaleString()}
         </div>
-        <div
-          className={`h-4 ${
-            darkMode ? "bg-gray-700" : "bg-gray-200"
-          } rounded-full overflow-hidden relative`}>
-          <div
-            className="h-full bg-gradient-to-r from-purple-500 via-pink-500 to-orange-500 transition-all duration-1000"
-            style={{ width: `${xpProgress}%` }}>
-            <div className="absolute inset-0 bg-white opacity-20 animate-pulse" />
-          </div>
-        </div>
-        <div className="text-center mt-2 text-sm text-gray-500">
-          {rewards.nextLevelXP - rewards.xp} XP to Level {rewards.level + 1}
+        <div className="text-xl font-medium">Total DSA Points</div>
+        <div className="text-sm text-gray-500 mt-2">
+          Rank #{userData.dsaRank || "-"} • {userData.totalProblems} Problems
+          Solved
         </div>
       </div>
 
-      {!rewards.dailyRewards.claimed && (
-        <div
-          className={`${
-            darkMode
-              ? "bg-gradient-to-r from-yellow-900 to-orange-900"
-              : "bg-gradient-to-r from-yellow-100 to-orange-100"
-          } rounded-2xl p-6 shadow-xl border-2 border-yellow-500`}>
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-xl font-bold flex items-center space-x-2">
-                <Gift className="w-6 h-6 text-yellow-500" />
-                <span>Daily Reward Available!</span>
-              </h3>
-              <p
-                className={`text-sm ${
-                  darkMode ? "text-gray-300" : "text-gray-700"
-                }`}>
-                Claim {rewards.dailyRewards.nextReward} coins for your{" "}
-                {rewards.dailyRewards.streak}-day streak
-              </p>
-            </div>
-            <button
-              onClick={handleClaimDaily}
-              disabled={claimingDaily}
-              className="px-6 py-3 bg-gradient-to-r from-yellow-500 to-orange-500 text-white font-bold rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center space-x-2">
-              {claimingDaily ? (
-                <>
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  <span>Claiming...</span>
-                </>
-              ) : (
-                <>
-                  <span>Claim Now</span>
-                  <ChevronRight className="w-4 h-4" />
-                </>
-              )}
-            </button>
-          </div>
-        </div>
-      )}
-
-      <div
-        className={`${
-          darkMode ? "bg-gray-800" : "bg-white"
-        } rounded-2xl p-6 shadow-xl`}>
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl sm:text-2xl font-bold flex items-center space-x-2">
-            <Award className="w-5 h-5 sm:w-6 sm:h-6 text-purple-500" />
-            <span>Badge Collection</span>
-          </h2>
-          <span
-            className={`px-3 py-1 rounded-full text-sm font-medium ${
-              darkMode ? "bg-gray-700" : "bg-gray-100"
-            }`}>
-            {earnedBadges.length} / {rewards.badges.length}
-          </span>
-        </div>
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-          {earnedBadges.map((badge) => (
-            <RewardBadgeCard
-              key={badge.id}
-              badge={badge}
-              earned={true}
-              darkMode={darkMode}
-            />
-          ))}
-          {lockedBadges.map((badge) => (
-            <RewardBadgeCard
-              key={badge.id}
-              badge={badge}
-              earned={false}
+      {/* Achievements Grid */}
+      <div>
+        <h2 className="text-2xl font-bold mb-6">Achievements</h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {achievements.map((achievement) => (
+            <AchievementCard
+              key={achievement.id}
+              achievement={achievement}
               darkMode={darkMode}
             />
           ))}
         </div>
       </div>
 
+      {/* Progress to Next Milestone */}
       <div
         className={`${
           darkMode ? "bg-gray-800" : "bg-white"
-        } rounded-2xl p-6 shadow-xl`}>
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl sm:text-2xl font-bold flex items-center space-x-2">
-            <Sparkles className="w-5 h-5 sm:w-6 sm:h-6 text-pink-500" />
-            <span>Rewards Shop</span>
-          </h2>
-          <button
-            onClick={() => setShowShop(true)}
-            className="px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-bold rounded-lg hover:opacity-90 transition-opacity">
-            Browse Shop
-          </button>
+        } rounded-2xl shadow-xl p-6`}>
+        <h2 className="text-2xl font-bold mb-6">Next Milestones</h2>
+        <div className="space-y-4">
+          <MilestoneProgress
+            title="Reach 100 Points"
+            current={userData.dsaPoints}
+            target={100}
+            darkMode={darkMode}
+          />
+          <MilestoneProgress
+            title="Solve 20 Problems"
+            current={userData.totalProblems}
+            target={20}
+            darkMode={darkMode}
+          />
+          <MilestoneProgress
+            title="7 Day Streak"
+            current={userData.streak}
+            target={7}
+            darkMode={darkMode}
+          />
+          <MilestoneProgress
+            title="Master 3 Topics"
+            current={userData.topicsProgress.length}
+            target={3}
+            darkMode={darkMode}
+          />
         </div>
-        <p className={`${darkMode ? "text-gray-400" : "text-gray-600"}`}>
-          Unlock exclusive avatars, themes, and power-ups with your coins!
-        </p>
       </div>
-
-      {showAvatarPicker && (
-        <AvatarPickerModal
-          currentAvatar={rewards.avatar.current}
-          availableAvatars={rewards.avatar.available}
-          onSelect={updateAvatar}
-          onClose={() => setShowAvatarPicker(false)}
-          darkMode={darkMode}
-        />
-      )}
-
-      {showShop && (
-        <ShopModal
-          coins={rewards.coins}
-          shop={rewards.shop}
-          onPurchase={purchaseItem}
-          onClose={() => setShowShop(false)}
-          darkMode={darkMode}
-        />
-      )}
-
-      {showConfetti && <ConfettiEffect />}
     </div>
   );
 };
+
+const AchievementCard = ({ achievement, darkMode }) => {
+  const Icon = achievement.icon;
+
+  return (
+    <div
+      className={`${
+        darkMode ? "bg-gray-800" : "bg-white"
+      } rounded-xl p-6 shadow-lg ${
+        achievement.unlocked ? "" : "opacity-50"
+      } transition-all hover:scale-105`}>
+      <div
+        className={`w-16 h-16 rounded-full ${
+          achievement.unlocked
+            ? `bg-gradient-to-br ${achievement.color}`
+            : darkMode
+            ? "bg-gray-700"
+            : "bg-gray-200"
+        } flex items-center justify-center mx-auto mb-4`}>
+        <Icon
+          className={`w-8 h-8 ${
+            achievement.unlocked ? "text-white" : "text-gray-500"
+          }`}
+        />
+      </div>
+      <h3 className="text-lg font-bold text-center mb-2">
+        {achievement.title}
+      </h3>
+      <p
+        className={`text-sm text-center ${
+          darkMode ? "text-gray-400" : "text-gray-600"
+        }`}>
+        {achievement.description}
+      </p>
+      {achievement.unlocked && (
+        <div className="mt-4 text-center">
+          <span className="inline-block px-3 py-1 bg-green-500 text-white text-xs font-bold rounded-full">
+            ✓ Unlocked
+          </span>
+        </div>
+      )}
+      {!achievement.unlocked && achievement.progress && (
+        <div className="mt-4">
+          <div className="text-xs text-center text-gray-500 mb-1">
+            {achievement.progress.current} / {achievement.progress.target}
+          </div>
+          <div
+            className={`w-full h-2 ${
+              darkMode ? "bg-gray-700" : "bg-gray-200"
+            } rounded-full overflow-hidden`}>
+            <div
+              className="h-full bg-gradient-to-r from-purple-500 to-pink-500"
+              style={{
+                width: `${Math.min(
+                  (achievement.progress.current / achievement.progress.target) *
+                    100,
+                  100
+                )}%`,
+              }}
+            />
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+const MilestoneProgress = ({ title, current, target, darkMode }) => {
+  const percentage = Math.min((current / target) * 100, 100);
+  const completed = current >= target;
+
+  return (
+    <div>
+      <div className="flex justify-between mb-2">
+        <span className="font-medium">{title}</span>
+        <span className="text-sm text-gray-500">
+          {current} / {target}
+        </span>
+      </div>
+      <div
+        className={`w-full h-3 ${
+          darkMode ? "bg-gray-700" : "bg-gray-200"
+        } rounded-full overflow-hidden`}>
+        <div
+          className={`h-full ${
+            completed
+              ? "bg-gradient-to-r from-green-500 to-emerald-500"
+              : "bg-gradient-to-r from-purple-500 to-pink-500"
+          }`}
+          style={{ width: `${percentage}%` }}
+        />
+      </div>
+      {completed && (
+        <div className="text-xs text-green-500 mt-1">✓ Completed!</div>
+      )}
+    </div>
+  );
+};
+
+// Generate achievements based on user data
+function generateAchievements(userData) {
+  return [
+    {
+      id: "first-problem",
+      title: "First Steps",
+      description: "Solve your first problem",
+      icon: Target,
+      color: "from-green-500 to-emerald-500",
+      unlocked: userData.totalProblems >= 1,
+      progress: { current: Math.min(userData.totalProblems, 1), target: 1 },
+    },
+    {
+      id: "problem-solver",
+      title: "Problem Solver",
+      description: "Solve 10 problems",
+      icon: Zap,
+      color: "from-blue-500 to-cyan-500",
+      unlocked: userData.totalProblems >= 10,
+      progress: { current: Math.min(userData.totalProblems, 10), target: 10 },
+    },
+    {
+      id: "coding-master",
+      title: "Coding Master",
+      description: "Solve 50 problems",
+      icon: Crown,
+      color: "from-yellow-500 to-orange-500",
+      unlocked: userData.totalProblems >= 50,
+      progress: { current: Math.min(userData.totalProblems, 50), target: 50 },
+    },
+    {
+      id: "point-collector",
+      title: "Point Collector",
+      description: "Earn 100 DSA points",
+      icon: Trophy,
+      color: "from-purple-500 to-pink-500",
+      unlocked: userData.dsaPoints >= 100,
+      progress: { current: Math.min(userData.dsaPoints, 100), target: 100 },
+    },
+    {
+      id: "dedicated-learner",
+      title: "Dedicated Learner",
+      description: "Maintain a 7-day streak",
+      icon: Award,
+      color: "from-orange-500 to-red-500",
+      unlocked: userData.streak >= 7,
+      progress: { current: Math.min(userData.streak, 7), target: 7 },
+    },
+    {
+      id: "easy-champion",
+      title: "Easy Champion",
+      description: "Solve 20 easy problems",
+      icon: Star,
+      color: "from-green-500 to-emerald-500",
+      unlocked: userData.easyCompleted >= 20,
+      progress: { current: Math.min(userData.easyCompleted, 20), target: 20 },
+    },
+    {
+      id: "medium-master",
+      title: "Medium Master",
+      description: "Solve 15 medium problems",
+      icon: Star,
+      color: "from-yellow-500 to-orange-500",
+      unlocked: userData.mediumCompleted >= 15,
+      progress: {
+        current: Math.min(userData.mediumCompleted, 15),
+        target: 15,
+      },
+    },
+    {
+      id: "hard-hero",
+      title: "Hard Hero",
+      description: "Solve 10 hard problems",
+      icon: Star,
+      color: "from-red-500 to-pink-500",
+      unlocked: userData.hardCompleted >= 10,
+      progress: { current: Math.min(userData.hardCompleted, 10), target: 10 },
+    },
+    {
+      id: "polyglot",
+      title: "Polyglot",
+      description: "Use 3 different languages",
+      icon: Award,
+      color: "from-indigo-500 to-purple-500",
+      unlocked: userData.languagesUsed.length >= 3,
+      progress: {
+        current: Math.min(userData.languagesUsed.length, 3),
+        target: 3,
+      },
+    },
+  ];
+}
 
 export default RewardsPage;

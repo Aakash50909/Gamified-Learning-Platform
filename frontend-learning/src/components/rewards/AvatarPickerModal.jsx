@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { X, Check } from "lucide-react";
-import { avatarEmojis } from "../../api/mockData";
+import { avatarEmojis } from "../../utils/constants"; // ✅ Import from constants instead
 
 const AvatarPickerModal = ({
   currentAvatar,

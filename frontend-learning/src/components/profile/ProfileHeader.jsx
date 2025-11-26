@@ -1,13 +1,77 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Camera, Edit2, Mail, MapPin, Calendar } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
-import { userData } from "../../api/mockData";
 import { avatarEmojis } from "../../utils/constants";
+
+const API_BASE_URL = "http://localhost:5000/api";
 
 const ProfileHeader = ({ darkMode, setShowEditProfile }) => {
   const { user } = useAuth();
+  const [userData, setUserData] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  const currentUser = user || userData;
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      if (!user?.id) {
+        // Use data from auth context if no ID
+        setUserData(user);
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const response = await fetch(
+          `${API_BASE_URL}/learning/progress?userId=${user.id}`
+        );
+
+        if (response.ok) {
+          const data = await response.json();
+
+          // Combine auth user data with fetched data
+          setUserData({
+            ...user,
+            xp: data.totalXP,
+            level: data.level,
+            streak: data.streak,
+            longestStreak: data.longestStreak,
+            quizzesCompleted: data.quizzesCompleted,
+          });
+        } else {
+          // Fallback to auth user data
+          setUserData(user);
+        }
+      } catch (error) {
+        console.error("Error fetching user profile:", error);
+        // Fallback to auth user data
+        setUserData(user);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUserProfile();
+  }, [user]);
+
+  if (loading) {
+    return (
+      <div
+        className={`${
+          darkMode ? "bg-gray-800" : "bg-white"
+        } rounded-2xl p-6 sm:p-8 shadow-xl`}>
+        <div className="text-center py-8">Loading profile...</div>
+      </div>
+    );
+  }
+
+  const currentUser = userData || {
+    username: "User",
+    avatar: "ninja",
+    title: "Learner",
+    bio: "Welcome to LearnQuest!",
+    email: "user@learnquest.com",
+    location: "Unknown",
+    joinedDate: "Recently",
+  };
 
   return (
     <div
@@ -32,7 +96,9 @@ const ProfileHeader = ({ darkMode, setShowEditProfile }) => {
               <h1 className="text-2xl sm:text-3xl font-bold break-words">
                 {currentUser.username}
               </h1>
-              <p className="text-purple-500 font-medium">{currentUser.title}</p>
+              <p className="text-purple-500 font-medium">
+                {currentUser.title || "Learner"}
+              </p>
             </div>
             <button
               onClick={() => setShowEditProfile(true)}
@@ -46,21 +112,25 @@ const ProfileHeader = ({ darkMode, setShowEditProfile }) => {
             className={`${
               darkMode ? "text-gray-400" : "text-gray-600"
             } mb-4 text-sm sm:text-base`}>
-            {currentUser.bio}
+            {currentUser.bio || "Welcome to LearnQuest!"}
           </p>
 
           <div className="flex flex-wrap gap-3 sm:gap-4 text-xs sm:text-sm justify-center md:justify-start">
-            <div className="flex items-center space-x-2">
-              <Mail className="w-3 h-3 sm:w-4 sm:h-4 text-purple-500" />
-              <span className="break-all">{currentUser.email}</span>
-            </div>
-            <div className="flex items-center space-x-2">
-              <MapPin className="w-3 h-3 sm:w-4 sm:h-4 text-purple-500" />
-              <span>{currentUser.location}</span>
-            </div>
+            {currentUser.email && (
+              <div className="flex items-center space-x-2">
+                <Mail className="w-3 h-3 sm:w-4 sm:h-4 text-purple-500" />
+                <span className="break-all">{currentUser.email}</span>
+              </div>
+            )}
+            {currentUser.location && (
+              <div className="flex items-center space-x-2">
+                <MapPin className="w-3 h-3 sm:w-4 sm:h-4 text-purple-500" />
+                <span>{currentUser.location}</span>
+              </div>
+            )}
             <div className="flex items-center space-x-2">
               <Calendar className="w-3 h-3 sm:w-4 sm:h-4 text-purple-500" />
-              <span>Joined {currentUser.joinedDate}</span>
+              <span>Joined {currentUser.joinedDate || "Recently"}</span>
             </div>
           </div>
         </div>

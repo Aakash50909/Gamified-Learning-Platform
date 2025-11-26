@@ -1,33 +1,55 @@
 import { useState, useEffect } from "react";
-import { BADGES, userData, avatarEmojis } from "../api/mockData";
+import { BADGES, avatarEmojis } from "../utils/constants";
+import { useAuth } from "../contexts/AuthContext";
+
+const API_BASE_URL = "http://localhost:5000/api";
 
 const getXPForLevel = (level) => {
-  return level * 100;
+  return level * 200; // 200 XP per level
 };
 
-const mockRewardsAPI = {
-  async getRewards() {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        resolve({
-          coins: 1200,
-          xp: userData.xp,
-          level: userData.level,
-          nextLevelXP: getXPForLevel(userData.level + 1),
+export const useRewards = () => {
+  const { user } = useAuth();
+  const [rewards, setRewards] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchRewards = async () => {
+      if (!user?.id) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        // Fetch user progress from API
+        const response = await fetch(
+          `${API_BASE_URL}/learning/progress?userId=${user.id}`
+        );
+
+        if (!response.ok) throw new Error("Failed to fetch rewards");
+
+        const data = await response.json();
+
+        console.log("✅ Rewards API Response:", data);
+
+        const rewardsData = {
+          coins: 1200, // TODO: Add coins field to user model
+          xp: data.totalXP || 0,
+          level: data.level || 1,
+          nextLevelXP: getXPForLevel((data.level || 1) + 1),
           avatar: {
-            current: "ninja",
+            current: user.avatar || "ninja",
             available: Object.keys(avatarEmojis),
           },
           badges: Object.values(BADGES).map((b) => ({
             ...b,
-            earned: userData.unlockedBadges.includes(b.id),
-            earnedDate: userData.unlockedBadges.includes(b.id)
-              ? new Date().toISOString()
-              : null,
+            earned: false, // TODO: Check user.badges array
+            earnedDate: null,
           })),
           dailyRewards: {
-            claimed: false,
-            streak: userData.streak,
+            claimed: false, // TODO: Check if claimed today
+            streak: data.streak || 0,
             nextReward: 50,
           },
           shop: {
@@ -61,43 +83,11 @@ const mockRewardsAPI = {
               },
             ],
           },
-        });
-      }, 500);
-    });
-  },
+        };
 
-  async updateAvatar(avatarId) {
-    console.log("Updating avatar to:", avatarId);
-    return new Promise((resolve) => {
-      setTimeout(() => resolve({ success: true }), 300);
-    });
-  },
-
-  async claimDaily() {
-    return new Promise((resolve) => {
-      setTimeout(() => resolve({ success: true, coins: 50 }), 500);
-    });
-  },
-
-  async purchaseItem(id, cost) {
-    console.log("Purchasing item:", id, "for", cost);
-    return new Promise((resolve) => {
-      setTimeout(() => resolve({ success: true }), 500);
-    });
-  },
-};
-
-export const useRewards = () => {
-  const [rewards, setRewards] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-
-  useEffect(() => {
-    const fetchRewards = async () => {
-      try {
-        const data = await mockRewardsAPI.getRewards();
-        setRewards(data);
+        setRewards(rewardsData);
       } catch (err) {
+        console.error("❌ Rewards API Error:", err);
         setError(err.message);
       } finally {
         setLoading(false);
@@ -105,11 +95,20 @@ export const useRewards = () => {
     };
 
     fetchRewards();
-  }, []);
+  }, [user]);
 
   const updateAvatar = async (avatarName) => {
     try {
-      await mockRewardsAPI.updateAvatar(avatarName);
+      const response = await fetch(`${API_BASE_URL}/user/avatar`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ userId: user.id, avatar: avatarName }),
+      });
+
+      if (!response.ok) throw new Error("Failed to update avatar");
+
       setRewards((prevRewards) => {
         if (!prevRewards) return prevRewards;
         return {
@@ -125,7 +124,18 @@ export const useRewards = () => {
 
   const claimDaily = async () => {
     try {
-      const result = await mockRewardsAPI.claimDaily();
+      const response = await fetch(`${API_BASE_URL}/rewards/daily`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ userId: user.id }),
+      });
+
+      if (!response.ok) throw new Error("Failed to claim daily reward");
+
+      const result = await response.json();
+
       setRewards((prevRewards) => {
         if (!prevRewards) return prevRewards;
         return {
@@ -150,7 +160,20 @@ export const useRewards = () => {
     }
 
     try {
-      await mockRewardsAPI.purchaseItem(itemId, itemPrice);
+      const response = await fetch(`${API_BASE_URL}/rewards/shop/purchase`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          userId: user.id,
+          itemId,
+          price: itemPrice,
+        }),
+      });
+
+      if (!response.ok) throw new Error("Failed to purchase item");
+
       setRewards((prevRewards) => {
         if (!prevRewards) return prevRewards;
         return {
@@ -167,10 +190,54 @@ export const useRewards = () => {
 
   const refresh = async () => {
     setLoading(true);
+    setError(null);
+
     try {
-      const data = await mockRewardsAPI.getRewards();
-      setRewards(data);
-      setError(null);
+      const response = await fetch(
+        `${API_BASE_URL}/learning/progress?userId=${user.id}`
+      );
+      if (!response.ok) throw new Error("Failed to fetch rewards");
+
+      const data = await response.json();
+
+      const rewardsData = {
+        coins: 1200,
+        xp: data.totalXP || 0,
+        level: data.level || 1,
+        nextLevelXP: getXPForLevel((data.level || 1) + 1),
+        avatar: {
+          current: user.avatar || "ninja",
+          available: Object.keys(avatarEmojis),
+        },
+        badges: Object.values(BADGES).map((b) => ({
+          ...b,
+          earned: false,
+          earnedDate: null,
+        })),
+        dailyRewards: {
+          claimed: false,
+          streak: data.streak || 0,
+          nextReward: 50,
+        },
+        shop: {
+          avatars: [
+            { id: "astronaut", name: "Astronaut", price: 500, unlocked: false },
+            { id: "detective", name: "Detective", price: 750, unlocked: false },
+            {
+              id: "superhero",
+              name: "Superhero",
+              price: 1000,
+              unlocked: false,
+            },
+          ],
+          themes: [
+            { id: "neon", name: "Neon Theme", price: 300, unlocked: false },
+            { id: "forest", name: "Forest Theme", price: 400, unlocked: false },
+          ],
+        },
+      };
+
+      setRewards(rewardsData);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -189,4 +256,4 @@ export const useRewards = () => {
   };
 };
 
-export { getXPForLevel, mockRewardsAPI };
+export { getXPForLevel };

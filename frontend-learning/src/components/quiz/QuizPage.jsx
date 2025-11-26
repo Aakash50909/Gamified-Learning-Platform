@@ -1,10 +1,15 @@
 import React, { useState, useEffect } from "react";
 import { ChevronRight, Clock, Zap } from "lucide-react";
-import { quizData } from "../../api/mockData";
 import apiService from "../../api/apiService";
 import { LoadingSpinner } from "../common/LoadingSpinner";
+import { useAuth } from "../../contexts/AuthContext";
+
+const API_BASE_URL = "http://localhost:5000/api";
 
 const QuizPage = ({ darkMode, topic, setCurrentView }) => {
+  const { user } = useAuth();
+  const [quiz, setQuiz] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState(null);
   const [answers, setAnswers] = useState([]);
@@ -14,22 +19,159 @@ const QuizPage = ({ darkMode, topic, setCurrentView }) => {
   const [submitError, setSubmitError] = useState(null);
   const [result, setResult] = useState(null);
 
+  // Fetch quiz data
   useEffect(() => {
-    if (timeLeft > 0 && !quizComplete) {
+    const fetchQuiz = async () => {
+      if (!topic) {
+        setCurrentView("skills");
+        return;
+      }
+
+      try {
+        const response = await fetch(`${API_BASE_URL}/quiz/${topic.id}`);
+
+        if (!response.ok) {
+          // Fallback to mock quiz
+          setQuiz({
+            questions: [
+              {
+                id: 1,
+                q: "What is a variable?",
+                options: [
+                  "A container for data",
+                  "A function",
+                  "A loop",
+                  "A condition",
+                ],
+                correct: 0,
+              },
+              {
+                id: 2,
+                q: "What does let keyword do?",
+                options: [
+                  "Declares a variable",
+                  "Creates a function",
+                  "Defines a class",
+                  "Imports a module",
+                ],
+                correct: 0,
+              },
+              {
+                id: 3,
+                q: "What is const used for?",
+                options: [
+                  "Declaring constants",
+                  "Creating functions",
+                  "Looping",
+                  "Conditions",
+                ],
+                correct: 0,
+              },
+            ],
+            timeLimit: 180,
+            xpReward: 150,
+          });
+          console.warn("Using fallback quiz data");
+        } else {
+          const quizData = await response.json();
+          setQuiz(quizData);
+        }
+      } catch (error) {
+        console.error("Error fetching quiz:", error);
+        // Fallback quiz
+        setQuiz({
+          questions: [
+            {
+              id: 1,
+              q: "What is a variable?",
+              options: [
+                "A container for data",
+                "A function",
+                "A loop",
+                "A condition",
+              ],
+              correct: 0,
+            },
+            {
+              id: 2,
+              q: "What does let keyword do?",
+              options: [
+                "Declares a variable",
+                "Creates a function",
+                "Defines a class",
+                "Imports a module",
+              ],
+              correct: 0,
+            },
+            {
+              id: 3,
+              q: "What is const used for?",
+              options: [
+                "Declaring constants",
+                "Creating functions",
+                "Looping",
+                "Conditions",
+              ],
+              correct: 0,
+            },
+          ],
+          timeLimit: 180,
+          xpReward: 150,
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchQuiz();
+  }, [topic, setCurrentView]);
+
+  // Timer countdown
+  useEffect(() => {
+    if (timeLeft > 0 && !quizComplete && quiz) {
       const timer = setTimeout(() => setTimeLeft(timeLeft - 1), 1000);
       return () => clearTimeout(timer);
     }
-  }, [timeLeft, quizComplete]);
+  }, [timeLeft, quizComplete, quiz]);
 
   if (!topic) {
     setCurrentView("skills");
     return null;
   }
 
-  const quiz = quizData[1];
+  if (loading) {
+    return (
+      <div className="max-w-2xl mx-auto animate-fade-in">
+        <div
+          className={`${
+            darkMode ? "bg-gray-800" : "bg-white"
+          } rounded-2xl p-8 shadow-xl text-center`}>
+          <LoadingSpinner />
+          <p className={`mt-4 ${darkMode ? "text-gray-400" : "text-gray-600"}`}>
+            Loading quiz...
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   if (!quiz) {
-    setCurrentView("skills");
-    return null;
+    return (
+      <div className="max-w-2xl mx-auto animate-fade-in">
+        <div
+          className={`${
+            darkMode ? "bg-gray-800" : "bg-white"
+          } rounded-2xl p-8 shadow-xl text-center`}>
+          <div className="text-6xl mb-4">❌</div>
+          <h2 className="text-2xl font-bold mb-4">Quiz Not Found</h2>
+          <button
+            onClick={() => setCurrentView("skills")}
+            className="px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-bold rounded-lg hover:opacity-90 transition-opacity">
+            Back to Skills
+          </button>
+        </div>
+      </div>
+    );
   }
 
   const question = quiz.questions[currentQuestion];
@@ -46,20 +188,25 @@ const QuizPage = ({ darkMode, topic, setCurrentView }) => {
       setSubmitting(true);
 
       try {
-        const submissionResult = await apiService.submitQuiz(
-          topic.id,
-          newAnswers
-        );
+        const submissionResult = await apiService.submitQuiz(topic.id, {
+          answers: newAnswers,
+          userId: user?.id,
+          timeSpent: quiz.timeLimit - timeLeft,
+        });
         setResult(submissionResult);
       } catch (error) {
+        console.error("Error submitting quiz:", error);
         setSubmitError(error.message);
+
+        // Calculate score locally as fallback
         const score = newAnswers.filter(
           (ans, idx) => ans === quiz.questions[idx].correct
         ).length;
+
         setResult({
           score,
           totalQuestions: quiz.questions.length,
-          xpEarned: quiz.xpReward,
+          xpEarned: Math.floor((score / quiz.questions.length) * quiz.xpReward),
           correct: score,
           percentage: (score / quiz.questions.length) * 100,
         });

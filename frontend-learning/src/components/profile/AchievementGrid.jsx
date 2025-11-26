@@ -1,6 +1,68 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Award, Lock } from "lucide-react";
-import { BADGES, userData } from "../../api/mockData";
+import { useAuth } from "../../contexts/AuthContext"; // Make sure you have this
+
+const API_BASE_URL = "http://localhost:5000/api";
+
+// Badge definitions (keep these as they define the badge types)
+const BADGES = {
+  streakStarter: {
+    id: "streakStarter",
+    name: "Streak Starter",
+    icon: "🔥",
+    description: "Practice for 3 days in a row",
+    color: "from-orange-500 to-red-500",
+  },
+  quizMaster: {
+    id: "quizMaster",
+    name: "Quiz Master",
+    icon: "🎓",
+    description: "Complete 10 quizzes",
+    color: "from-blue-500 to-cyan-500",
+  },
+  fastThinker: {
+    id: "fastThinker",
+    name: "Fast Thinker",
+    icon: "⚡",
+    description: "Average under 30s per question",
+    color: "from-yellow-500 to-orange-500",
+  },
+  allRounder: {
+    id: "allRounder",
+    name: "All-Rounder",
+    icon: "🌟",
+    description: "Practice all skill categories",
+    color: "from-purple-500 to-pink-500",
+  },
+  perfectScore: {
+    id: "perfectScore",
+    name: "Perfect Score",
+    icon: "💯",
+    description: "Get 100% on any quiz",
+    color: "from-green-500 to-emerald-500",
+  },
+  nightOwl: {
+    id: "nightOwl",
+    name: "Night Owl",
+    icon: "🦉",
+    description: "Practice after midnight",
+    color: "from-indigo-500 to-purple-500",
+  },
+  earlyBird: {
+    id: "earlyBird",
+    name: "Early Bird",
+    icon: "🌅",
+    description: "Practice before 6 AM",
+    color: "from-pink-500 to-rose-500",
+  },
+  master: {
+    id: "master",
+    name: "Master",
+    icon: "👑",
+    description: "Reach level 20",
+    color: "from-yellow-600 to-orange-600",
+  },
+};
 
 const BadgeCard = ({ badge, unlocked, darkMode }) => {
   return (
@@ -25,7 +87,7 @@ const BadgeCard = ({ badge, unlocked, darkMode }) => {
         <Lock className="w-3 h-3 absolute top-2 right-2 text-gray-500" />
       )}
       <div
-        className={`absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none`}>
+        className={`absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-10`}>
         {badge.description}
       </div>
     </div>
@@ -33,12 +95,70 @@ const BadgeCard = ({ badge, unlocked, darkMode }) => {
 };
 
 const AchievementGrid = ({ darkMode }) => {
+  const { user } = useAuth();
+  const [userData, setUserData] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchUserData = async () => {
+      if (!user?.id) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const response = await fetch(`${API_BASE_URL}/user/profile/${user.id}`);
+
+        if (response.ok) {
+          const data = await response.json();
+          setUserData(data);
+        } else {
+          // Use mock data as fallback
+          setUserData({
+            badges: [
+              "streakStarter",
+              "quizMaster",
+              "perfectScore",
+              "fastThinker",
+            ],
+          });
+        }
+      } catch (error) {
+        console.error("Error fetching user data:", error);
+        // Fallback to mock data
+        setUserData({
+          badges: [
+            "streakStarter",
+            "quizMaster",
+            "perfectScore",
+            "fastThinker",
+          ],
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUserData();
+  }, [user]);
+
+  if (loading) {
+    return (
+      <div
+        className={`${
+          darkMode ? "bg-gray-800" : "bg-white"
+        } rounded-2xl p-6 shadow-xl`}>
+        <div className="text-center py-8">Loading badges...</div>
+      </div>
+    );
+  }
+
   const allBadges = Object.values(BADGES);
   const unlockedBadges = allBadges.filter((b) =>
-    userData.unlockedBadges.includes(b.id)
+    userData?.badges?.includes(b.id)
   );
   const lockedBadges = allBadges.filter(
-    (b) => !userData.unlockedBadges.includes(b.id)
+    (b) => !userData?.badges?.includes(b.id)
   );
 
   return (

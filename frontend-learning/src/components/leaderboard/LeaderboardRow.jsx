@@ -1,72 +1,74 @@
 import React from "react";
-import { Crown, Flame, Award, ArrowUp, ArrowDown, Minus } from "lucide-react";
 import RankBadge from "./RankBadge";
 
 const LeaderboardRow = ({ player, darkMode, isEven, onClick }) => {
-  const getRankChangeIcon = (change) => {
-    if (change > 0) return <ArrowUp className="w-4 h-4 text-green-500" />;
-    if (change < 0) return <ArrowDown className="w-4 h-4 text-red-500" />;
-    return <Minus className="w-4 h-4 text-gray-500" />;
-  };
+  // Extract DSA stats safely
+  const points = player?.points || 0;
+  const problemsSolved = player?.stats?.totalCompleted || 0;
+  const easyCompleted = player?.stats?.easyCompleted || 0;
+  const mediumCompleted = player?.stats?.mediumCompleted || 0;
+  const hardCompleted = player?.stats?.hardCompleted || 0;
+  const rank = player?.rank || 0;
+  const username = player?.username || "Anonymous";
+  const avatar = player?.avatar || "👤";
 
   return (
     <tr
       onClick={onClick}
       className={`${
-        isEven
+        player?.isCurrentUser
+          ? "bg-purple-500 bg-opacity-10 border-l-4 border-purple-500"
+          : isEven
           ? darkMode
             ? "bg-gray-800"
             : "bg-white"
           : darkMode
           ? "bg-gray-750"
           : "bg-gray-50"
-      } hover:bg-purple-500 hover:bg-opacity-10 cursor-pointer transition-all`}>
+      } hover:bg-purple-500 hover:bg-opacity-10 transition-all cursor-pointer`}>
       <td className="px-6 py-4">
-        <RankBadge rank={player.rank} />
+        <RankBadge rank={rank} />
       </td>
       <td className="px-6 py-4">
         <div className="flex items-center space-x-3">
-          <div className="text-3xl">{player.avatar}</div>
+          <div className="text-3xl">{getAvatarEmoji(avatar)}</div>
           <div>
-            <div className="font-bold">{player.username}</div>
-            <div className="flex items-center space-x-1 text-sm text-orange-500">
-              <Flame className="w-3 h-3" />
-              <span>{player.streak} day streak</span>
-            </div>
+            <div className="font-bold">{username}</div>
+            {player?.isCurrentUser && (
+              <div className="text-xs text-purple-500 font-bold">You</div>
+            )}
           </div>
         </div>
       </td>
       <td className="px-6 py-4">
-        <div className="flex items-center space-x-2">
-          <Crown className="w-4 h-4 text-yellow-500" />
-          <span className="font-bold">{player.level}</span>
+        <div className="font-bold text-yellow-500 text-lg">
+          {points.toLocaleString()}
         </div>
       </td>
       <td className="px-6 py-4">
-        <div className="font-bold text-purple-500">
-          {player.xp.toLocaleString()}
-        </div>
-        <div
-          className={`text-xs ${darkMode ? "text-gray-400" : "text-gray-600"}`}>
-          +{player.weeklyXP} this week
-        </div>
+        <div className="font-bold">{problemsSolved}</div>
       </td>
       <td className="px-6 py-4">
-        <div className="flex items-center space-x-1">
-          <Award className="w-4 h-4 text-yellow-500" />
-          <span className="font-bold">{player.badges}</span>
-        </div>
-      </td>
-      <td className="px-6 py-4">
-        <div className="flex items-center space-x-1">
-          {getRankChangeIcon(player.rankChange)}
-          <span className="text-sm font-medium">
-            {Math.abs(player.rankChange)}
-          </span>
+        <div className="flex items-center space-x-3 text-sm">
+          <span className="text-green-500">🟢 {easyCompleted}</span>
+          <span className="text-yellow-500">🟡 {mediumCompleted}</span>
+          <span className="text-red-500">🔴 {hardCompleted}</span>
         </div>
       </td>
     </tr>
   );
+};
+
+const getAvatarEmoji = (avatar) => {
+  const avatarMap = {
+    ninja: "🥷",
+    robot: "🤖",
+    wizard: "🧙",
+    scientist: "👨‍🔬",
+    astronaut: "👨‍🚀",
+    artist: "👨‍🎨",
+  };
+  return avatarMap[avatar] || avatar || "👤";
 };
 
 export default LeaderboardRow;

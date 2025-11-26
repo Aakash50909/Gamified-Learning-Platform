@@ -1,15 +1,84 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { ChevronRight } from "lucide-react";
-import { moduleData } from "../../api/mockData";
 import TopicCard from "./TopicCard";
 
+const API_BASE_URL = "http://localhost:5000/api";
+
 const ModulePage = ({ darkMode, skill, setCurrentView, setSelectedTopic }) => {
+  const [module, setModule] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchModuleData = async () => {
+      if (!skill) {
+        setCurrentView("skills");
+        return;
+      }
+
+      try {
+        // Fetch module details from API
+        const response = await fetch(
+          `${API_BASE_URL}/learning/modules/${skill.id}`
+        );
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch module");
+        }
+
+        const data = await response.json();
+
+        // Transform API data to match component expectations
+        setModule({
+          name: data.title,
+          topics: data.topicsData || [],
+        });
+      } catch (error) {
+        console.error("Error fetching module:", error);
+
+        // Fallback to mock data
+        const mockModule = {
+          name: skill.name,
+          topics: [
+            {
+              id: 1,
+              name: "Topic 1",
+              level: "Beginner",
+              completion: 0,
+              locked: false,
+              xp: 150,
+            },
+            {
+              id: 2,
+              name: "Topic 2",
+              level: "Beginner",
+              completion: 0,
+              locked: false,
+              xp: 200,
+            },
+          ],
+        };
+        setModule(mockModule);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchModuleData();
+  }, [skill, setCurrentView]);
+
   if (!skill) {
     setCurrentView("skills");
     return null;
   }
 
-  const module = moduleData[skill.id];
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="text-xl">Loading module...</div>
+      </div>
+    );
+  }
+
   if (!module) {
     setCurrentView("skills");
     return null;
@@ -47,19 +116,25 @@ const ModulePage = ({ darkMode, skill, setCurrentView, setSelectedTopic }) => {
         </div>
 
         <div className="space-y-4">
-          {module.topics.map((topic) => (
-            <TopicCard
-              key={topic.id}
-              topic={topic}
-              darkMode={darkMode}
-              onClick={() => {
-                if (!topic.locked) {
-                  setSelectedTopic(topic);
-                  setCurrentView("quiz");
-                }
-              }}
-            />
-          ))}
+          {module.topics && module.topics.length > 0 ? (
+            module.topics.map((topic) => (
+              <TopicCard
+                key={topic.id}
+                topic={topic}
+                darkMode={darkMode}
+                onClick={() => {
+                  if (!topic.locked) {
+                    setSelectedTopic(topic);
+                    setCurrentView("quiz");
+                  }
+                }}
+              />
+            ))
+          ) : (
+            <p className="text-center py-8 text-gray-500">
+              No topics available yet. Add topics in your database!
+            </p>
+          )}
         </div>
       </div>
     </div>

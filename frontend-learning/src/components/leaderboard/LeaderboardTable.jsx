@@ -12,7 +12,7 @@ const LeaderboardTable = ({ players, darkMode, setSelectedPlayer }) => {
       <div className="p-4 sm:p-6 border-b border-gray-700">
         <h2 className="text-xl sm:text-2xl font-bold flex items-center space-x-2">
           <Trophy className="w-5 h-5 sm:w-6 sm:h-6 text-yellow-500" />
-          <span>Rankings</span>
+          <span>DSA Rankings</span>
         </h2>
       </div>
 
@@ -20,10 +20,10 @@ const LeaderboardTable = ({ players, darkMode, setSelectedPlayer }) => {
       <div className="block md:hidden">
         {players.map((player) => (
           <MobilePlayerCard
-            key={player.id}
+            key={player.userId || player.id}
             player={player}
             darkMode={darkMode}
-            onClick={() => setSelectedPlayer(player)}
+            onClick={() => setSelectedPlayer && setSelectedPlayer(player)}
           />
         ))}
       </div>
@@ -40,25 +40,24 @@ const LeaderboardTable = ({ players, darkMode, setSelectedPlayer }) => {
                 Player
               </th>
               <th className="px-6 py-4 text-left text-sm font-semibold">
-                Level
-              </th>
-              <th className="px-6 py-4 text-left text-sm font-semibold">XP</th>
-              <th className="px-6 py-4 text-left text-sm font-semibold">
-                Badges
+                Points
               </th>
               <th className="px-6 py-4 text-left text-sm font-semibold">
-                Change
+                Problems Solved
+              </th>
+              <th className="px-6 py-4 text-left text-sm font-semibold">
+                Breakdown
               </th>
             </tr>
           </thead>
           <tbody>
             {players.map((player, idx) => (
               <LeaderboardRow
-                key={player.id}
+                key={player.userId || player.id}
                 player={player}
                 darkMode={darkMode}
                 isEven={idx % 2 === 0}
-                onClick={() => setSelectedPlayer(player)}
+                onClick={() => setSelectedPlayer && setSelectedPlayer(player)}
               />
             ))}
           </tbody>

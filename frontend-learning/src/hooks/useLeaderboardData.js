@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import apiService from "../api/apiService";
-import { leaderboardData } from "../api/mockData";
 
 export const useLeaderboardData = (type) => {
   const [data, setData] = useState(null);
@@ -14,19 +13,25 @@ export const useLeaderboardData = (type) => {
       setLoading(true);
       setError(null);
 
-      let leaderboardResult;
-
-      // Try API first, fallback to mock data if it fails
       try {
-        leaderboardResult = await apiService.fetchLeaderboard(type);
-      } catch (apiError) {
-        // API not available, use mock data
-        leaderboardResult = leaderboardData[type];
-      }
+        const leaderboardResult = await apiService.fetchLeaderboard(type);
 
-      if (mounted) {
-        setData(leaderboardResult);
-        setLoading(false);
+        console.log("✅ Leaderboard API Response:", leaderboardResult);
+
+        if (mounted) {
+          setData(leaderboardResult);
+        }
+      } catch (apiError) {
+        console.error("❌ Leaderboard API Error:", apiError);
+        if (mounted) {
+          setError(apiError.message);
+          // Set empty array instead of fallback
+          setData([]);
+        }
+      } finally {
+        if (mounted) {
+          setLoading(false);
+        }
       }
     };
 

@@ -1,17 +1,20 @@
-// ==================== COPY THIS ENTIRE CONTENT TO: src/App.jsx ====================
+// ==================== UPDATED App.jsx ====================
 
 import React, { useState } from "react";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import LoginPage from "./components/auth/LoginPage";
 import SignupPage from "./components/auth/SignupPage";
 import Navbar from "./components/layout/Navbar";
-import SkillsPage from "./components/skills/SkillsPage";
+// ❌ REMOVE THIS LINE:
+// import SkillsPage from "./components/skills/SkillsPage";
 import ModulePage from "./components/modules/ModulePage";
 import QuizPage from "./components/quiz/QuizPage";
 import LeaderboardPage from "./components/leaderboard/LeaderboardPage";
 import ProfilePage from "./components/profile/ProfilePage";
 import AnalyticsPage from "./components/analytics/AnalyticsPage";
 import RewardsPage from "./components/rewards/RewardsPage";
+// ✅ ADD THIS LINE:
+import DSAMainContainer from "./pages/DSAMainContainer";
 
 const MainApp = () => {
   const [currentView, setCurrentView] = useState("skills");
@@ -40,6 +43,9 @@ const MainApp = () => {
       />
 
       <div className="container mx-auto px-4 py-8 max-w-7xl">
+        {/* ✅ REPLACE THIS BLOCK: */}
+        {currentView === "skills" && <DSAMainContainer darkMode={darkMode} />}
+        {/* ❌ DELETE OLD CODE:
         {currentView === "skills" && (
           <SkillsPage
             darkMode={darkMode}
@@ -47,6 +53,9 @@ const MainApp = () => {
             setSelectedSkill={setSelectedSkill}
           />
         )}
+        */}
+
+        {/* Keep all other views unchanged */}
         {currentView === "module" && (
           <ModulePage
             darkMode={darkMode}

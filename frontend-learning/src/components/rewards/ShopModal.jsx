@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { X } from "lucide-react";
-import { avatarEmojis } from "../../api/mockData";
+import { avatarEmojis } from "../../utils/constants"; // ✅ Changed from mockData
 
 const ShopItemCard = ({
   item,

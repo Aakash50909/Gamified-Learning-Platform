@@ -4,30 +4,449 @@
         "auth": {
             "POST /auth/login": {
                 "description": "Login user",
-                "body_params": [
-                    "email",
-                    "password"
-                ],
+                "body_params": ["email", "password"],
                 "response_example": {
-                    "token": "...",
+                    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
                     "user": {
-                        "id": "...",
+                        "id": "user123",
                         "role": "player"
                     }
+                }
+            },
+            "POST /auth/register": {
+                "description": "Register new user",
+                "body_params": ["username", "email", "password"],
+                "response_example": {
+                    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+                    "user": {
+                        "id": "user456",
+                        "username": "CodeNinja_Pro",
+                        "email": "user@example.com",
+                        "role": "player"
+                    }
+                }
+            },
+            "POST /auth/refresh": {
+                "description": "Refresh access token",
+                "body_params": ["refreshToken"],
+                "response_example": {
+                    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+                    "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                }
+            },
+            "POST /auth/logout": {
+                "description": "Logout user and invalidate tokens",
+                "body_params": [],
+                "response_example": {
+                    "success": true,
+                    "message": "Logged out successfully"
                 }
             }
         },
         "learning": {
             "GET /learning/modules": {
                 "description": "Get list of learning modules (For Dev B)",
+                "query_params": ["difficulty", "category", "limit", "offset"],
                 "response_example": [
                     {
                         "_id": "mod_1",
                         "title": "Intro to Variables",
+                        "description": "Learn the basics of variables and data types",
                         "difficulty": "easy",
-                        "xpReward": 50
+                        "category": "coding",
+                        "xpReward": 50,
+                        "estimatedTime": 15,
+                        "topics": ["variables", "data-types", "constants"],
+                        "prerequisites": [],
+                        "isLocked": false,
+                        "completionRate": 0
+                    },
+                    {
+                        "_id": "mod_2",
+                        "title": "Control Flow",
+                        "description": "Master if statements, loops, and conditional logic",
+                        "difficulty": "easy",
+                        "category": "coding",
+                        "xpReward": 75,
+                        "estimatedTime": 20,
+                        "topics": ["if-else", "loops", "switch"],
+                        "prerequisites": ["mod_1"],
+                        "isLocked": false,
+                        "completionRate": 0
+                    },
+                    {
+                        "_id": "mod_3",
+                        "title": "Functions & Scope",
+                        "description": "Understand functions, parameters, and variable scope",
+                        "difficulty": "intermediate",
+                        "category": "coding",
+                        "xpReward": 100,
+                        "estimatedTime": 25,
+                        "topics": ["functions", "parameters", "scope", "closures"],
+                        "prerequisites": ["mod_1", "mod_2"],
+                        "isLocked": false,
+                        "completionRate": 0
+                    },
+                    {
+                        "_id": "mod_4",
+                        "title": "Data Structures",
+                        "description": "Learn arrays, objects, and complex data structures",
+                        "difficulty": "intermediate",
+                        "category": "coding",
+                        "xpReward": 150,
+                        "estimatedTime": 30,
+                        "topics": ["arrays", "objects", "maps", "sets"],
+                        "prerequisites": ["mod_3"],
+                        "isLocked": false,
+                        "completionRate": 0
+                    },
+                    {
+                        "_id": "mod_5",
+                        "title": "Advanced Algorithms",
+                        "description": "Master sorting, searching, and optimization algorithms",
+                        "difficulty": "hard",
+                        "category": "coding",
+                        "xpReward": 200,
+                        "estimatedTime": 45,
+                        "topics": ["sorting", "searching", "recursion", "dynamic-programming"],
+                        "prerequisites": ["mod_4"],
+                        "isLocked": true,
+                        "completionRate": 0
                     }
                 ]
+            },
+            "GET /learning/modules/:moduleId": {
+                "description": "Get detailed information about a specific module",
+                "path_params": ["moduleId"],
+                "response_example": {
+                    "_id": "mod_1",
+                    "title": "Intro to Variables",
+                    "description": "Learn the basics of variables and data types",
+                    "difficulty": "easy",
+                    "category": "coding",
+                    "xpReward": 50,
+                    "estimatedTime": 15,
+                    "topics": [
+                        {
+                            "id": "topic_1",
+                            "name": "Variables & Data Types",
+                            "level": "Beginner",
+                            "completion": 0,
+                            "locked": false,
+                            "xp": 150,
+                            "lessons": 5,
+                            "quizzes": 2
+                        },
+                        {
+                            "id": "topic_2",
+                            "name": "Type Conversion",
+                            "level": "Beginner",
+                            "completion": 0,
+                            "locked": false,
+                            "xp": 100,
+                            "lessons": 3,
+                            "quizzes": 1
+                        }
+                    ],
+                    "prerequisites": [],
+                    "isLocked": false,
+                    "progress": {
+                        "completedTopics": 0,
+                        "totalTopics": 2,
+                        "completionPercentage": 0,
+                        "earnedXP": 0,
+                        "totalXP": 250
+                    }
+                }
+            },
+            "GET /learning/topics/:topicId": {
+                "description": "Get specific topic details with lessons and quizzes",
+                "path_params": ["topicId"],
+                "response_example": {
+                    "id": "topic_1",
+                    "moduleId": "mod_1",
+                    "name": "Variables & Data Types",
+                    "description": "Understanding how to store and manipulate data",
+                    "level": "Beginner",
+                    "xp": 150,
+                    "lessons": [
+                        {
+                            "id": "lesson_1",
+                            "title": "What are Variables?",
+                            "type": "video",
+                            "duration": 180,
+                            "completed": false,
+                            "xp": 30
+                        },
+                        {
+                            "id": "lesson_2",
+                            "title": "Primitive Data Types",
+                            "type": "text",
+                            "duration": 300,
+                            "completed": false,
+                            "xp": 40
+                        },
+                        {
+                            "id": "lesson_3",
+                            "title": "Variable Declaration",
+                            "type": "interactive",
+                            "duration": 240,
+                            "completed": false,
+                            "xp": 50
+                        }
+                    ],
+                    "quizzes": [
+                        {
+                            "id": "quiz_1",
+                            "title": "Variables Quiz",
+                            "questions": 10,
+                            "timeLimit": 180,
+                            "xpReward": 100,
+                            "completed": false,
+                            "highScore": null
+                        }
+                    ],
+                    "locked": false,
+                    "completion": 0
+                }
+            },
+            "GET /learning/progress": {
+                "description": "Get user's overall learning progress across all modules",
+                "response_example": {
+                    "userId": "user123",
+                    "totalXP": 2450,
+                    "level": 12,
+                    "streak": 7,
+                    "longestStreak": 21,
+                    "modulesCompleted": 2,
+                    "totalModules": 15,
+                    "topicsCompleted": 8,
+                    "totalTopics": 45,
+                    "quizzesCompleted": 23,
+                    "averageQuizScore": 87,
+                    "timeSpent": 14520,
+                    "skillProgress": [
+                        {
+                            "id": 1,
+                            "name": "Coding",
+                            "icon": "Code",
+                            "color": "from-blue-500 to-cyan-500",
+                            "xp": 2450,
+                            "maxXp": 3000,
+                            "level": 12,
+                            "streak": 7,
+                            "progress": 81.67
+                        },
+                        {
+                            "id": 2,
+                            "name": "Mathematics",
+                            "icon": "Brain",
+                            "color": "from-purple-500 to-pink-500",
+                            "xp": 1800,
+                            "maxXp": 2500,
+                            "level": 9,
+                            "streak": 3,
+                            "progress": 72
+                        },
+                        {
+                            "id": 3,
+                            "name": "Puzzles",
+                            "icon": "Target",
+                            "color": "from-orange-500 to-red-500",
+                            "xp": 980,
+                            "maxXp": 1500,
+                            "level": 5,
+                            "streak": 12,
+                            "progress": 65.33
+                        },
+                        {
+                            "id": 4,
+                            "name": "Trivia",
+                            "icon": "Book",
+                            "color": "from-green-500 to-emerald-500",
+                            "xp": 3200,
+                            "maxXp": 4000,
+                            "level": 15,
+                            "streak": 5,
+                            "progress": 80
+                        }
+                    ],
+                    "recentActivity": [
+                        {
+                            "id": 1,
+                            "type": "quiz",
+                            "title": "JavaScript Fundamentals",
+                            "result": "9/10",
+                            "xp": 180,
+                            "timestamp": "2024-11-22T10:30:00Z"
+                        },
+                        {
+                            "id": 2,
+                            "type": "lesson",
+                            "title": "Variables Completed",
+                            "result": "Completed",
+                            "xp": 50,
+                            "timestamp": "2024-11-22T09:15:00Z"
+                        }
+                    ]
+                }
+            },
+            "POST /learning/modules/:moduleId/start": {
+                "description": "Mark a module as started by the user",
+                "path_params": ["moduleId"],
+                "body_params": [],
+                "response_example": {
+                    "success": true,
+                    "moduleId": "mod_1",
+                    "startedAt": "2024-11-22T12:00:00Z",
+                    "message": "Module started successfully"
+                }
+            },
+            "POST /learning/lessons/:lessonId/complete": {
+                "description": "Mark a lesson as completed and earn XP",
+                "path_params": ["lessonId"],
+                "body_params": ["timeSpent"],
+                "response_example": {
+                    "success": true,
+                    "lessonId": "lesson_1",
+                    "xpEarned": 30,
+                    "totalXP": 2480,
+                    "newLevel": false,
+                    "completedAt": "2024-11-22T12:15:00Z"
+                }
+            },
+            "GET /learning/categories": {
+                "description": "Get all available learning categories",
+                "response_example": [
+                    {
+                        "id": 1,
+                        "name": "Coding",
+                        "description": "Programming languages and software development",
+                        "icon": "Code",
+                        "color": "from-blue-500 to-cyan-500",
+                        "moduleCount": 12,
+                        "totalXP": 15000
+                    },
+                    {
+                        "id": 2,
+                        "name": "Mathematics",
+                        "description": "Algebra, calculus, and mathematical problem solving",
+                        "icon": "Brain",
+                        "color": "from-purple-500 to-pink-500",
+                        "moduleCount": 8,
+                        "totalXP": 10000
+                    },
+                    {
+                        "id": 3,
+                        "name": "Puzzles",
+                        "description": "Logic puzzles and brain teasers",
+                        "icon": "Target",
+                        "color": "from-orange-500 to-red-500",
+                        "moduleCount": 6,
+                        "totalXP": 7500
+                    },
+                    {
+                        "id": 4,
+                        "name": "Trivia",
+                        "description": "General knowledge and trivia challenges",
+                        "icon": "Book",
+                        "color": "from-green-500 to-emerald-500",
+                        "moduleCount": 10,
+                        "totalXP": 12000
+                    }
+                ]
+            },
+            "GET /learning/recommendations": {
+                "description": "Get personalized learning recommendations based on user progress",
+                "response_example": {
+                    "recommended": [
+                        {
+                            "_id": "mod_3",
+                            "title": "Functions & Scope",
+                            "difficulty": "intermediate",
+                            "xpReward": 100,
+                            "reason": "Next in your learning path",
+                            "matchScore": 95
+                        },
+                        {
+                            "_id": "mod_6",
+                            "title": "Math: Algebra Basics",
+                            "difficulty": "easy",
+                            "xpReward": 80,
+                            "reason": "Strengthen your weak areas",
+                            "matchScore": 78
+                        }
+                    ],
+                    "popular": [
+                        {
+                            "_id": "mod_7",
+                            "title": "Python for Beginners",
+                            "difficulty": "easy",
+                            "xpReward": 120,
+                            "enrolledUsers": 5420
+                        }
+                    ],
+                    "trending": [
+                        {
+                            "_id": "mod_8",
+                            "title": "Machine Learning 101",
+                            "difficulty": "hard",
+                            "xpReward": 250,
+                            "weeklyGrowth": 45
+                        }
+                    ]
+                }
+            },
+            "POST /learning/bookmark": {
+                "description": "Bookmark a module for later",
+                "body_params": ["moduleId"],
+                "response_example": {
+                    "success": true,
+                    "moduleId": "mod_5",
+                    "bookmarked": true,
+                    "message": "Module bookmarked successfully"
+                }
+            },
+            "GET /learning/bookmarks": {
+                "description": "Get user's bookmarked modules",
+                "response_example": [
+                    {
+                        "_id": "mod_5",
+                        "title": "Advanced Algorithms",
+                        "difficulty": "hard",
+                        "xpReward": 200,
+                        "bookmarkedAt": "2024-11-20T14:30:00Z"
+                    }
+                ]
+            },
+            "GET /learning/search": {
+                "description": "Search for modules and topics",
+                "query_params": ["q", "difficulty", "category", "minXP", "maxXP"],
+                "response_example": {
+                    "query": "variables",
+                    "results": [
+                        {
+                            "_id": "mod_1",
+                            "title": "Intro to Variables",
+                            "type": "module",
+                            "difficulty": "easy",
+                            "xpReward": 50,
+                            "relevanceScore": 98
+                        },
+                        {
+                            "_id": "topic_1",
+                            "title": "Variables & Data Types",
+                            "type": "topic",
+                            "moduleId": "mod_1",
+                            "level": "Beginner",
+                            "xp": 150,
+                            "relevanceScore": 95
+                        }
+                    ],
+                    "totalResults": 2,
+                    "page": 1,
+                    "totalPages": 1
+                }
             }
         },
         "competitions": {
@@ -37,7 +456,28 @@
                     {
                         "_id": "comp_1",
                         "name": "Weekly Code Sprint",
-                        "type": "leaderboard"
+                        "type": "leaderboard",
+                        "description": "Compete to earn the most XP this week",
+                        "startDate": "2024-11-18T00:00:00Z",
+                        "endDate": "2024-11-25T23:59:59Z",
+                        "participants": 1247,
+                        "prizePool": 10000,
+                        "status": "active",
+                        "userRank": 47,
+                        "userScore": 2450
+                    },
+                    {
+                        "_id": "comp_2",
+                        "name": "Algorithm Showdown",
+                        "type": "tournament",
+                        "description": "Head-to-head coding challenges",
+                        "startDate": "2024-11-20T00:00:00Z",
+                        "endDate": "2024-11-22T23:59:59Z",
+                        "participants": 512,
+                        "prizePool": 5000,
+                        "status": "active",
+                        "currentRound": "quarterfinals",
+                        "userStatus": "qualified"
                     }
                 ]
             }
