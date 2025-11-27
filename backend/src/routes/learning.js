@@ -1,50 +1,103 @@
 const router = require("express").Router();
-const User = require("../models/User"); // Import the Real DB Model
+const User = require("../models/User");
+const DSAProgress = require("../models/DSAProgress");
 
-// GET: Fetch Modules (Keep this simple for now)
-router.get("/modules", (req, res) => {
-  res.json([
-    { id: "mod_1", title: "Intro to Variables", xpReward: 50 },
-    { id: "mod_2", title: "Loops & Logic", xpReward: 100 },
-  ]);
-});
-
-// POST: Complete a Module & Earn XP (THE REAL LOGIC)
-router.post("/complete", async (req, res) => {
-  const { userId, xpAmount } = req.body;
-
+// GET /api/learning/progress - Get user learning progress
+router.get("/progress", async (req, res) => {
   try {
-    // 1. Find the user in the Real Cloud Database
-    const user = await User.findById(userId);
-    if (!user) return res.status(404).json({ error: "User not found" });
+    const { userId } = req.query;
 
-    // 2. Update their XP
-    user.xp += xpAmount;
+    if (!userId) {
+      return res.status(400).json({ error: "userId is required" });
+    }
 
-    // 3. Save to MongoDB Atlas
-    await user.save();
+    const user = await User.findById(userId).select(
+      "username avatar dsaPoints dsaRank dsaStats"
+    );
 
-    res.json({ message: "XP Updated", newXP: user.xp });
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    const completedProblems = await DSAProgress.countDocuments({
+      userId,
+      completed: true,
+    });
+
+    // Calculate streak based on consecutive days
+    const recentActivity = await DSAProgress.find({
+      userId,
+      completed: true,
+    })
+      .sort({ completedAt: -1 })
+      .select("completedAt");
+
+    const streak = calculateStreak(recentActivity);
+
+    res.json({
+      username: user.username,
+      avatar: user.avatar || "ninja",
+      points: user.dsaPoints || 0,
+      rank: user.dsaRank || 0,
+      stats: user.dsaStats || {
+        easyCompleted: 0,
+        mediumCompleted: 0,
+        hardCompleted: 0,
+        totalCompleted: 0,
+      },
+      completedProblems: completedProblems,
+      streak: streak,
+    });
   } catch (err) {
+    console.error("Learning Progress API Error:", err);
     res.status(500).json({ error: err.message });
   }
 });
-const User = require("../models/User"); // Make sure User model is imported
 
-// GET /api/auth/profile/:id
-// This lets the frontend fetch real stats
-router.get("/profile/:id", async (req, res) => {
-  try {
-    // 1. Look up user by ID in MongoDB
-    const user = await User.findById(req.params.id);
+// Helper function to calculate consecutive day streak
+function calculateStreak(activities) {
+  if (!activities || activities.length === 0) return 0;
 
-    if (!user) return res.status(404).json({ error: "User not found" });
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
 
-    // 2. Send back the REAL data
-    res.json(user);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
+  // Get unique dates
+  const uniqueDates = [
+    ...new Set(
+      activities.map((activity) => {
+        const date = new Date(activity.completedAt);
+        date.setHours(0, 0, 0, 0);
+        return date.getTime();
+      })
+    ),
+  ].sort((a, b) => b - a);
+
+  if (uniqueDates.length === 0) return 0;
+
+  const mostRecentActivity = new Date(uniqueDates[0]);
+  const daysSinceLastActivity = Math.floor(
+    (today - mostRecentActivity) / (1000 * 60 * 60 * 24)
+  );
+
+  if (daysSinceLastActivity > 1) return 0;
+
+  let streak = 0;
+  let currentDate = today.getTime();
+
+  for (const dateTimestamp of uniqueDates) {
+    const dayDiff = Math.floor(
+      (currentDate - dateTimestamp) / (1000 * 60 * 60 * 24)
+    );
+
+    if (dayDiff === 0 || dayDiff === 1) {
+      streak++;
+      currentDate = dateTimestamp;
+    } else {
+      break;
+    }
   }
-});
+
+  return streak;
+}
 
 module.exports = router;
