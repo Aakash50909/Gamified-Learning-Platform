@@ -4,74 +4,88 @@ import LoginPage from "./components/auth/LoginPage";
 import SignupPage from "./components/auth/SignupPage";
 import Navbar from "./components/layout/Navbar";
 
-// ✅ IMPORT THE NEW DSA PAGE WE BUILT
-// (Make sure the file exists at this path! If it's in a subfolder, adjust the path)
-import DSATopicsPage from "./components/DSATopicsPage";
-
-// Keep existing imports
-import ModulePage from "./components/modules/ModulePage";
-import QuizPage from "./components/quiz/QuizPage";
+// --- IMPORTING YOUR COMPONENTS BASED ON YOUR SCREENSHOTS ---
+import DSATopicsPage from "./components/DSATopicsPage"; // Your Main Home Page
 import LeaderboardPage from "./components/leaderboard/LeaderboardPage";
-import ProfilePage from "./components/profile/ProfilePage";
 import AnalyticsPage from "./components/analytics/AnalyticsPage";
 import RewardsPage from "./components/rewards/RewardsPage";
+import ProfilePage from "./components/profile/ProfilePage";
+import ModulePage from "./components/modules/ModulePage"; // Keeping this if you need it later
+import QuizPage from "./components/quiz/QuizPage"; // Keeping this if you need it later
 
 const MainApp = () => {
-  // "skills" is the default view when the app opens
+  // Default view is 'skills' (The DSA Topics Page)
   const [currentView, setCurrentView] = useState("skills");
   const [darkMode, setDarkMode] = useState(false);
-
-  // These states help pass data between views
-  const [selectedSkill, setSelectedSkill] = useState(null);
-  const [selectedTopic, setSelectedTopic] = useState(null);
-  const [leaderboardType, setLeaderboardType] = useState("global");
-  const [showEditProfile, setShowEditProfile] = useState(false);
-
   const { isAuthenticated } = useAuth();
+
+  // State to handle passing data between views
+  const [selectedTopic, setSelectedTopic] = useState(null);
 
   const bgClass = darkMode
     ? "bg-gray-900 text-white"
     : "bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 text-gray-900";
 
-  // 1. AUTH GUARD
   if (!isAuthenticated) {
     return <AuthRouter />;
   }
 
   return (
     <div className={`min-h-screen ${bgClass} transition-colors duration-300`}>
-      {/* 2. NAVBAR: Ensure this component uses onClick={() => setCurrentView('...')} */}
+      {/* THE NAVBAR CONTROLS THE VIEW */}
       <Navbar
         darkMode={darkMode}
         setDarkMode={setDarkMode}
         currentView={currentView}
-        setCurrentView={setCurrentView}
+        setCurrentView={setCurrentView} // <--- Passing the "Remote Control" function
       />
 
       <div className="container mx-auto px-4 py-8 max-w-7xl">
 
-        {/* 3. THE VIEWS (Only ONE renders at a time) */}
-
-        {/* ✅ VIEW 1: HOME / SKILLS -> Shows DSA Topics */}
+        {/* === VIEW 1: HOME (DSA TOPICS) === */}
         {currentView === "skills" && (
           <DSATopicsPage
             darkMode={darkMode}
-            // If DSATopicsPage needs to switch views, pass setCurrentView here
             setCurrentView={setCurrentView}
           />
         )}
 
-        {/* VIEW 2: MODULES */}
+        {/* === VIEW 2: LEADERBOARD === */}
+        {currentView === "leaderboard" && (
+          <LeaderboardPage
+            darkMode={darkMode}
+          />
+        )}
+
+        {/* === VIEW 3: REWARDS === */}
+        {currentView === "rewards" && (
+          <RewardsPage
+            darkMode={darkMode}
+          />
+        )}
+
+        {/* === VIEW 4: ANALYTICS === */}
+        {currentView === "analytics" && (
+          <AnalyticsPage
+            darkMode={darkMode}
+          />
+        )}
+
+        {/* === VIEW 5: PROFILE === */}
+        {currentView === "profile" && (
+          <ProfilePage
+            darkMode={darkMode}
+          />
+        )}
+
+        {/* === INTERNAL VIEWS (Modules/Quiz) === */}
         {currentView === "module" && (
           <ModulePage
             darkMode={darkMode}
-            skill={selectedSkill}
             setCurrentView={setCurrentView}
             setSelectedTopic={setSelectedTopic}
           />
         )}
-
-        {/* VIEW 3: QUIZ */}
         {currentView === "quiz" && (
           <QuizPage
             darkMode={darkMode}
@@ -80,33 +94,6 @@ const MainApp = () => {
           />
         )}
 
-        {/* VIEW 4: LEADERBOARD */}
-        {currentView === "leaderboard" && (
-          <LeaderboardPage
-            darkMode={darkMode}
-            leaderboardType={leaderboardType}
-            setLeaderboardType={setLeaderboardType}
-          />
-        )}
-
-        {/* VIEW 5: PROFILE */}
-        {currentView === "profile" && (
-          <ProfilePage
-            darkMode={darkMode}
-            showEditProfile={showEditProfile}
-            setShowEditProfile={setShowEditProfile}
-          />
-        )}
-
-        {/* VIEW 6: ANALYTICS */}
-        {currentView === "analytics" && (
-          <AnalyticsPage darkMode={darkMode} />
-        )}
-
-        {/* VIEW 7: REWARDS */}
-        {currentView === "rewards" && (
-          <RewardsPage darkMode={darkMode} />
-        )}
       </div>
     </div>
   );
@@ -114,9 +101,7 @@ const MainApp = () => {
 
 const AuthRouter = () => {
   const [showSignup, setShowSignup] = useState(false);
-  if (showSignup) {
-    return <SignupPage onSwitchToLogin={() => setShowSignup(false)} />;
-  }
+  if (showSignup) return <SignupPage onSwitchToLogin={() => setShowSignup(false)} />;
   return <LoginPage onSwitchToSignup={() => setShowSignup(true)} />;
 };
 
