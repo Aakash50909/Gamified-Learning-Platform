@@ -1,5 +1,8 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
-const API_BASE_URL = "http://localhost:5000/api";
+
+// ✅ FIXED: Use VITE_API_BASE_URL if available (Vercel), otherwise use Localhost
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
+
 const AuthContext = createContext(null);
 
 export const useAuth = () => {
@@ -105,8 +108,6 @@ export const AuthProvider = ({ children }) => {
 
       if (!response.ok) throw new Error("Profile update failed");
 
-      const data = await response.json();
-
       // Update user in state and localStorage
       const updatedUser = { ...user, ...profileData };
       setUser(updatedUser);
@@ -196,8 +197,8 @@ export const AuthProvider = ({ children }) => {
     signup,
     logout,
     updateProfile,
-    updateStats, // ✨ NEW
-    refreshUser, // ✨ NEW
+    updateStats,
+    refreshUser,
     getAuthHeader,
   };
 
