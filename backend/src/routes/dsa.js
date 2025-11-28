@@ -2,7 +2,19 @@ const router = require("express").Router();
 const Problem = require("../models/Problem");
 const User = require("../models/User");
 
-// 1. GET all problems
+// 1. GET Topics (Grouped by Difficulty/Tag)
+router.get("/topics", async (req, res) => {
+  // Hardcoded topics for the demo (Fastest way)
+  const topics = [
+    { id: 1, name: "Arrays", description: "Basic array operations", icon: "📊", color: "from-blue-400 to-blue-600", points: 100 },
+    { id: 2, name: "Linked Lists", description: "Node-based structures", icon: "🔗", color: "from-green-400 to-green-600", points: 200 },
+    { id: 3, name: "Stacks & Queues", description: "LIFO and FIFO", icon: "📚", color: "from-purple-400 to-purple-600", points: 150 },
+    { id: 4, name: "Trees", description: "Hierarchical data", icon: "🌳", color: "from-yellow-400 to-yellow-600", points: 300 }
+  ];
+  res.json(topics);
+});
+
+// 2. GET Problems (Filtered by Topic if needed)
 router.get("/problems", async (req, res) => {
   try {
     const problems = await Problem.find();
@@ -12,35 +24,23 @@ router.get("/problems", async (req, res) => {
   }
 });
 
-// 2. POST: Mark problem as solved & Award Points
+// 3. POST Solve (Update Points)
 router.post("/solve", async (req, res) => {
   const { userId, problemId } = req.body;
-
   try {
-    const problem = await Problem.findById(problemId);
-    if (!problem) return res.status(404).json({ error: "Problem not found" });
-
     const user = await User.findById(userId);
-    if (!user) return res.status(404).json({ error: "User not found" });
+    const problem = await Problem.findById(problemId);
 
-    // Prevent double points (Optional logic)
-    // if (user.solvedProblems.includes(problemId)) ...
+    if (!user || !problem) return res.status(404).json({ error: "Not found" });
 
     // Update Stats
     user.dsaPoints = (user.dsaPoints || 0) + problem.points;
-    user.dsaStats = user.dsaStats || { easy: 0, medium: 0, hard: 0 };
-
-    // Increment difficulty counter
-    const diff = problem.difficulty.toLowerCase();
-    if (user.dsaStats[diff] !== undefined) user.dsaStats[diff]++;
+    user.dsaStats = user.dsaStats || { totalCompleted: 0 };
+    user.dsaStats.totalCompleted += 1;
 
     await user.save();
 
-    res.json({
-      success: true,
-      message: `Solved! Earned ${problem.points} points.`,
-      newPoints: user.dsaPoints
-    });
+    res.json({ success: true, newPoints: user.dsaPoints, newStats: user.dsaStats });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
