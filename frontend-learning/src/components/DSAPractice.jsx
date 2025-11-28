@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { ExternalLink, CheckCircle } from "lucide-react";
-import { useAuth } from "../../contexts/AuthContext";
+import { useAuth } from "../contexts/AuthContext";;
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
 
@@ -56,8 +56,8 @@ const DSAPractice = () => {
                     <div className="flex justify-between items-start">
                         <h3 className="text-xl font-bold text-white">{prob.title}</h3>
                         <span className={`px-2 py-1 rounded text-xs font-bold ${prob.difficulty === "Easy" ? "bg-green-500/20 text-green-400" :
-                                prob.difficulty === "Medium" ? "bg-yellow-500/20 text-yellow-400" :
-                                    "bg-red-500/20 text-red-400"
+                            prob.difficulty === "Medium" ? "bg-yellow-500/20 text-yellow-400" :
+                                "bg-red-500/20 text-red-400"
                             }`}>
                             {prob.difficulty}
                         </span>
