@@ -42,6 +42,7 @@ app.use("/api/dsa", dsaRoutes);
 app.use("/api/learning", learningRoutes);
 app.use("/api/leaderboard", leaderboardRoutes);
 app.use("/api/user", userRoutes);
+app.use("/api/dsa", require("./routes/dsa"));
 
 // Health check endpoint
 app.get("/", (req, res) => {
