@@ -4,22 +4,21 @@ import LoginPage from "./components/auth/LoginPage";
 import SignupPage from "./components/auth/SignupPage";
 import Navbar from "./components/layout/Navbar";
 
-// --- IMPORTING YOUR COMPONENTS BASED ON YOUR SCREENSHOTS ---
-import DSATopicsPage from "./components/DSATopicsPage"; // Your Main Home Page
+// ✅ FIXED IMPORT: Pointing to 'pages' folder instead of 'components'
+import DSATopicsPage from "./pages/DSATopicsPage";
+
+// Keep these as they were (Assuming they are still in components)
 import LeaderboardPage from "./components/leaderboard/LeaderboardPage";
 import AnalyticsPage from "./components/analytics/AnalyticsPage";
 import RewardsPage from "./components/rewards/RewardsPage";
 import ProfilePage from "./components/profile/ProfilePage";
-import ModulePage from "./components/modules/ModulePage"; // Keeping this if you need it later
-import QuizPage from "./components/quiz/QuizPage"; // Keeping this if you need it later
+import ModulePage from "./components/modules/ModulePage";
+import QuizPage from "./components/quiz/QuizPage";
 
 const MainApp = () => {
-  // Default view is 'skills' (The DSA Topics Page)
   const [currentView, setCurrentView] = useState("skills");
   const [darkMode, setDarkMode] = useState(false);
   const { isAuthenticated } = useAuth();
-
-  // State to handle passing data between views
   const [selectedTopic, setSelectedTopic] = useState(null);
 
   const bgClass = darkMode
@@ -32,17 +31,16 @@ const MainApp = () => {
 
   return (
     <div className={`min-h-screen ${bgClass} transition-colors duration-300`}>
-      {/* THE NAVBAR CONTROLS THE VIEW */}
       <Navbar
         darkMode={darkMode}
         setDarkMode={setDarkMode}
         currentView={currentView}
-        setCurrentView={setCurrentView} // <--- Passing the "Remote Control" function
+        setCurrentView={setCurrentView}
       />
 
       <div className="container mx-auto px-4 py-8 max-w-7xl">
 
-        {/* === VIEW 1: HOME (DSA TOPICS) === */}
+        {/* VIEW 1: HOME (DSA TOPICS) */}
         {currentView === "skills" && (
           <DSATopicsPage
             darkMode={darkMode}
@@ -50,35 +48,27 @@ const MainApp = () => {
           />
         )}
 
-        {/* === VIEW 2: LEADERBOARD === */}
+        {/* VIEW 2: LEADERBOARD */}
         {currentView === "leaderboard" && (
-          <LeaderboardPage
-            darkMode={darkMode}
-          />
+          <LeaderboardPage darkMode={darkMode} />
         )}
 
-        {/* === VIEW 3: REWARDS === */}
+        {/* VIEW 3: REWARDS */}
         {currentView === "rewards" && (
-          <RewardsPage
-            darkMode={darkMode}
-          />
+          <RewardsPage darkMode={darkMode} />
         )}
 
-        {/* === VIEW 4: ANALYTICS === */}
+        {/* VIEW 4: ANALYTICS */}
         {currentView === "analytics" && (
-          <AnalyticsPage
-            darkMode={darkMode}
-          />
+          <AnalyticsPage darkMode={darkMode} />
         )}
 
-        {/* === VIEW 5: PROFILE === */}
+        {/* VIEW 5: PROFILE */}
         {currentView === "profile" && (
-          <ProfilePage
-            darkMode={darkMode}
-          />
+          <ProfilePage darkMode={darkMode} />
         )}
 
-        {/* === INTERNAL VIEWS (Modules/Quiz) === */}
+        {/* INTERNAL VIEWS */}
         {currentView === "module" && (
           <ModulePage
             darkMode={darkMode}
@@ -93,7 +83,6 @@ const MainApp = () => {
             setCurrentView={setCurrentView}
           />
         )}
-
       </div>
     </div>
   );
