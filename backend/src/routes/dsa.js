@@ -108,7 +108,7 @@ router.get("/topics", async (req, res) => {
   }
 });
 
-// GET /api/dsa/problems - Fetch problems from GFG API
+// GET /api/dsa/problems - Fetch problems from GFG API with fallback
 router.get("/problems", async (req, res) => {
   try {
     const { topic, difficulty, page = 1 } = req.query;
@@ -127,10 +127,10 @@ router.get("/problems", async (req, res) => {
       return res.status(404).json({ error: "Topic not found" });
     }
 
+    // Try GFG API first
     const gfgEndpoints = [
       `https://practiceapi.geeksforgeeks.org/api/vLatest/problems/`,
       `https://practiceapi.geeksforgeeks.org/api/v1/problems/`,
-      `https://practiceapi.geeksforgeeks.org/api/latest/problems/`,
     ];
 
     let problems = [];
@@ -138,12 +138,7 @@ router.get("/problems", async (req, res) => {
 
     for (const endpoint of gfgEndpoints) {
       try {
-        console.log(`\n🔄 Trying GFG API: ${endpoint}`);
-        console.log(
-          `📋 Params: category=${
-            topicConfig.gfgSlug
-          }, difficulty=${difficulty.toLowerCase()}`
-        );
+        console.log(`🔄 Trying GFG API: ${endpoint}`);
 
         const response = await axios.get(endpoint, {
           params: {
@@ -151,51 +146,50 @@ router.get("/problems", async (req, res) => {
             difficulty: difficulty.toLowerCase(),
             page: page,
           },
-          timeout: 15000,
+          timeout: 10000,
           headers: {
             "User-Agent": "Mozilla/5.0",
             Accept: "application/json",
           },
         });
 
-        console.log(`✅ GFG API Response Status: ${response.status}`);
-        console.log(`📊 Response structure:`, Object.keys(response.data));
-
         const data = response.data;
-        problems = data.results || data.problems || data.data || [];
-
-        console.log(`📝 Problems found: ${problems.length}`);
+        problems = data.results || data.problems || [];
 
         if (problems && problems.length > 0) {
           apiSuccess = true;
-          console.log(
-            `✅ Successfully fetched ${problems.length} problems from GFG`
-          );
+          console.log(`✅ Found ${problems.length} problems from GFG`);
           break;
-        } else {
-          console.log(`⚠️ API returned empty results, trying next endpoint...`);
         }
       } catch (error) {
-        console.log(`❌ Failed with ${endpoint}`);
-        console.log(`   Error: ${error.message}`);
-        if (error.response) {
-          console.log(`   Status: ${error.response.status}`);
-          console.log(`   Data:`, error.response.data);
-        }
+        console.log(`❌ GFG API failed: ${error.message}`);
         continue;
       }
     }
 
+    // If GFG fails, use curated problems
     if (!apiSuccess || problems.length === 0) {
+      console.log("⚠️ Using curated practice problems");
+      const curatedProblems = getCuratedProblems(topicConfig.id, difficulty);
+
+      if (curatedProblems.length > 0) {
+        return res.json({
+          problems: curatedProblems,
+          total: curatedProblems.length,
+          page: 1,
+          topic: topicConfig.name,
+          difficulty,
+          source: "Curated Practice Problems",
+        });
+      }
+
       return res.status(404).json({
-        error: "No problems found from GFG API",
-        message: `Could not fetch problems for topic: ${topicConfig.name}, difficulty: ${difficulty}. Please try another topic or difficulty.`,
-        topic: topicConfig.name,
-        difficulty,
-        suggestion: "Try selecting a different topic or difficulty level",
+        error: "No problems available",
+        message: `No problems available for ${topicConfig.name} - ${difficulty}`,
       });
     }
 
+    // Transform GFG problems
     const transformedProblems = problems.slice(0, 10).map((problem, index) => ({
       id: problem.problem_name || problem.slug || `${topicConfig.id}-${index}`,
       slug:
@@ -233,48 +227,9 @@ router.get("/problems", async (req, res) => {
   } catch (err) {
     console.error("Problems API Error:", err.message);
     res.status(500).json({
-      error: "Failed to fetch problems from GFG API",
+      error: "Failed to fetch problems",
       message: err.message,
-      suggestion: "Please check your internet connection or try again later",
     });
-  }
-});
-
-// GET /api/dsa/problem/:slug - Get detailed problem from GFG
-router.get("/problem/:slug", async (req, res) => {
-  try {
-    const { slug } = req.params;
-
-    console.log("Fetching problem details for:", slug);
-
-    const gfgUrl = `https://practiceapi.geeksforgeeks.org/api/vLatest/problems/${slug}/`;
-
-    try {
-      const response = await axios.get(gfgUrl, {
-        timeout: 15000,
-      });
-
-      const problem = response.data;
-
-      res.json({
-        id: problem.problem_name || slug,
-        slug: slug,
-        title: problem.problem_title || problem.title,
-        difficulty: problem.difficulty,
-        description: problem.problem_description || problem.description,
-        inputFormat: problem.input_format || problem.inputFormat,
-        outputFormat: problem.output_format || problem.outputFormat,
-        constraints: problem.constraints,
-        sampleTestCases: parseSampleTestCases(problem),
-        source: "GFG API",
-      });
-    } catch (apiError) {
-      console.error("Failed to fetch from GFG:", apiError.message);
-      res.status(404).json({ error: "Problem not found" });
-    }
-  } catch (err) {
-    console.error("Problem Detail API Error:", err.message);
-    res.status(500).json({ error: err.message });
   }
 });
 
@@ -292,8 +247,6 @@ router.post("/execute", async (req, res) => {
       return res.status(400).json({ error: "Unsupported language" });
     }
 
-    console.log(`Executing ${language} code...`);
-
     const response = await axios.post(`${PISTON_API}/execute`, {
       language: langConfig.language,
       version: langConfig.version,
@@ -307,8 +260,6 @@ router.post("/execute", async (req, res) => {
       args: [],
       compile_timeout: 10000,
       run_timeout: 3000,
-      compile_memory_limit: -1,
-      run_memory_limit: -1,
     });
 
     const result = response.data;
@@ -329,7 +280,6 @@ router.post("/execute", async (req, res) => {
       res.json({
         success: true,
         output: output.trim(),
-        executionTime: result.run.code === 0 ? "Success" : "Failed",
       });
     } else if (result.compile && result.compile.code !== 0) {
       res.json({
@@ -365,8 +315,6 @@ router.post("/run-tests", async (req, res) => {
 
     const results = [];
     let allPassed = true;
-
-    console.log(`Running ${testCases.length} test cases...`);
 
     for (let i = 0; i < testCases.length; i++) {
       const testCase = testCases[i];
@@ -405,9 +353,7 @@ router.post("/run-tests", async (req, res) => {
             error: result.run.stderr || null,
           });
 
-          if (!passed) {
-            allPassed = false;
-          }
+          if (!passed) allPassed = false;
         } else {
           results.push({
             testNumber: i + 1,
@@ -422,7 +368,6 @@ router.post("/run-tests", async (req, res) => {
           allPassed = false;
         }
       } catch (error) {
-        console.error(`Test case ${i + 1} error:`, error.message);
         results.push({
           testNumber: i + 1,
           input: testCase.input,
@@ -602,7 +547,7 @@ router.get("/user-progress/:userId", async (req, res) => {
       userId,
       completed: true,
     }).select(
-      "problemSlug problemTitle topic difficulty pointsEarned completedAt"
+      "problemSlug problemTitle topic difficulty pointsEarned completedAt language"
     );
 
     res.json({
@@ -619,18 +564,132 @@ router.get("/user-progress/:userId", async (req, res) => {
   }
 });
 
-// GET /api/dsa/languages - Get supported languages
-router.get("/languages", (req, res) => {
-  res.json({
-    languages: Object.keys(LANGUAGE_CONFIG).map((key) => ({
-      id: key,
-      name: key.charAt(0).toUpperCase() + key.slice(1),
-      version: LANGUAGE_CONFIG[key].version,
-    })),
-  });
-});
+// Helper: Get curated practice problems
+function getCuratedProblems(topicId, difficulty) {
+  const points =
+    DIFFICULTY_LEVELS.find((d) => d.level === difficulty)?.points || 10;
 
-// Helper function to update all user rankings
+  const problemsDB = {
+    arrays: {
+      Easy: [
+        {
+          id: "two-sum",
+          slug: "two-sum",
+          title: "Two Sum",
+          difficulty: "Easy",
+          topic: "Arrays",
+          description:
+            "Given an array of integers nums and an integer target, return indices of the two numbers that add up to target.",
+          inputFormat:
+            "First line: n and target\nSecond line: n space-separated integers",
+          outputFormat: "Two space-separated indices",
+          constraints: "2 ≤ n ≤ 10^4",
+          sampleTestCases: [
+            {
+              input: "4 9\n2 7 11 15",
+              output: "0 1",
+              explanation: "nums[0] + nums[1] = 9",
+            },
+          ],
+          points,
+        },
+      ],
+      Medium: [
+        {
+          id: "max-subarray",
+          slug: "max-subarray",
+          title: "Maximum Subarray Sum",
+          difficulty: "Medium",
+          topic: "Arrays",
+          description:
+            "Find the contiguous subarray with the largest sum (Kadane's Algorithm).",
+          inputFormat: "First line: n\nSecond line: n space-separated integers",
+          outputFormat: "Single integer (maximum sum)",
+          constraints: "1 ≤ n ≤ 10^5",
+          sampleTestCases: [
+            {
+              input: "9\n-2 1 -3 4 -1 2 1 -5 4",
+              output: "6",
+              explanation: "Subarray [4,-1,2,1] = 6",
+            },
+          ],
+          points,
+        },
+      ],
+    },
+    strings: {
+      Easy: [
+        {
+          id: "reverse-string",
+          slug: "reverse-string",
+          title: "Reverse String",
+          difficulty: "Easy",
+          topic: "Strings",
+          description: "Reverse a given string.",
+          inputFormat: "Single line containing a string",
+          outputFormat: "Reversed string",
+          constraints: "1 ≤ length ≤ 10^5",
+          sampleTestCases: [
+            {
+              input: "hello",
+              output: "olleh",
+              explanation: "String reversed",
+            },
+          ],
+          points,
+        },
+      ],
+    },
+    "linked-list": {
+      Easy: [
+        {
+          id: "reverse-list",
+          slug: "reverse-list",
+          title: "Reverse Linked List",
+          difficulty: "Easy",
+          topic: "Linked List",
+          description: "Reverse a singly linked list (simulated with array).",
+          inputFormat: "First line: n\nSecond line: n space-separated integers",
+          outputFormat: "Reversed list as space-separated integers",
+          constraints: "0 ≤ n ≤ 5000",
+          sampleTestCases: [
+            {
+              input: "5\n1 2 3 4 5",
+              output: "5 4 3 2 1",
+              explanation: "List reversed",
+            },
+          ],
+          points,
+        },
+      ],
+      Medium: [
+        {
+          id: "middle-node",
+          slug: "middle-node",
+          title: "Middle of Linked List",
+          difficulty: "Medium",
+          topic: "Linked List",
+          description: "Find the middle node of a linked list.",
+          inputFormat: "First line: n\nSecond line: n space-separated integers",
+          outputFormat: "Value of middle node",
+          constraints: "1 ≤ n ≤ 100",
+          sampleTestCases: [
+            {
+              input: "5\n1 2 3 4 5",
+              output: "3",
+              explanation: "Middle element",
+            },
+          ],
+          points,
+        },
+      ],
+    },
+  };
+
+  return problemsDB[topicId]?.[difficulty] || [];
+}
+
+// Helper: Update rankings
 async function updateRankings() {
   try {
     const users = await User.find({ dsaPoints: { $gt: 0 } })
