@@ -1,29 +1,25 @@
-// ==================== UPDATED App.jsx ====================
-
 import React, { useState } from "react";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import LoginPage from "./components/auth/LoginPage";
 import SignupPage from "./components/auth/SignupPage";
 import Navbar from "./components/layout/Navbar";
-// ❌ REMOVE THIS LINE:
-// import SkillsPage from "./components/skills/SkillsPage";
-import ModulePage from "./components/modules/ModulePage";
-import QuizPage from "./components/quiz/QuizPage";
+
+// ✅ FIXED IMPORT: Pointing to 'pages' folder instead of 'components'
+import DSATopicsPage from "./pages/DSATopicsPage";
+
+// Keep these as they were (Assuming they are still in components)
 import LeaderboardPage from "./components/leaderboard/LeaderboardPage";
-import ProfilePage from "./components/profile/ProfilePage";
 import AnalyticsPage from "./components/analytics/AnalyticsPage";
 import RewardsPage from "./components/rewards/RewardsPage";
-// ✅ ADD THIS LINE:
-import DSAMainContainer from "./pages/DSAMainContainer";
+import ProfilePage from "./components/profile/ProfilePage";
+import ModulePage from "./components/modules/ModulePage";
+import QuizPage from "./components/quiz/QuizPage";
 
 const MainApp = () => {
   const [currentView, setCurrentView] = useState("skills");
   const [darkMode, setDarkMode] = useState(false);
-  const [selectedSkill, setSelectedSkill] = useState(null);
-  const [selectedTopic, setSelectedTopic] = useState(null);
-  const [leaderboardType, setLeaderboardType] = useState("global");
-  const [showEditProfile, setShowEditProfile] = useState(false);
   const { isAuthenticated } = useAuth();
+  const [selectedTopic, setSelectedTopic] = useState(null);
 
   const bgClass = darkMode
     ? "bg-gray-900 text-white"
@@ -43,23 +39,39 @@ const MainApp = () => {
       />
 
       <div className="container mx-auto px-4 py-8 max-w-7xl">
-        {/* ✅ REPLACE THIS BLOCK: */}
-        {currentView === "skills" && <DSAMainContainer darkMode={darkMode} />}
-        {/* ❌ DELETE OLD CODE:
+
+        {/* VIEW 1: HOME (DSA TOPICS) */}
         {currentView === "skills" && (
-          <SkillsPage
+          <DSATopicsPage
             darkMode={darkMode}
             setCurrentView={setCurrentView}
-            setSelectedSkill={setSelectedSkill}
           />
         )}
-        */}
 
-        {/* Keep all other views unchanged */}
+        {/* VIEW 2: LEADERBOARD */}
+        {currentView === "leaderboard" && (
+          <LeaderboardPage darkMode={darkMode} />
+        )}
+
+        {/* VIEW 3: REWARDS */}
+        {currentView === "rewards" && (
+          <RewardsPage darkMode={darkMode} />
+        )}
+
+        {/* VIEW 4: ANALYTICS */}
+        {currentView === "analytics" && (
+          <AnalyticsPage darkMode={darkMode} />
+        )}
+
+        {/* VIEW 5: PROFILE */}
+        {currentView === "profile" && (
+          <ProfilePage darkMode={darkMode} />
+        )}
+
+        {/* INTERNAL VIEWS */}
         {currentView === "module" && (
           <ModulePage
             darkMode={darkMode}
-            skill={selectedSkill}
             setCurrentView={setCurrentView}
             setSelectedTopic={setSelectedTopic}
           />
@@ -71,22 +83,6 @@ const MainApp = () => {
             setCurrentView={setCurrentView}
           />
         )}
-        {currentView === "leaderboard" && (
-          <LeaderboardPage
-            darkMode={darkMode}
-            leaderboardType={leaderboardType}
-            setLeaderboardType={setLeaderboardType}
-          />
-        )}
-        {currentView === "profile" && (
-          <ProfilePage
-            darkMode={darkMode}
-            showEditProfile={showEditProfile}
-            setShowEditProfile={setShowEditProfile}
-          />
-        )}
-        {currentView === "analytics" && <AnalyticsPage darkMode={darkMode} />}
-        {currentView === "rewards" && <RewardsPage darkMode={darkMode} />}
       </div>
     </div>
   );
@@ -94,11 +90,7 @@ const MainApp = () => {
 
 const AuthRouter = () => {
   const [showSignup, setShowSignup] = useState(false);
-
-  if (showSignup) {
-    return <SignupPage onSwitchToLogin={() => setShowSignup(false)} />;
-  }
-
+  if (showSignup) return <SignupPage onSwitchToLogin={() => setShowSignup(false)} />;
   return <LoginPage onSwitchToSignup={() => setShowSignup(true)} />;
 };
 

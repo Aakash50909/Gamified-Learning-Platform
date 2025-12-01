@@ -6,16 +6,28 @@ require("dotenv").config();
 const app = express();
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: "*", // Allow Vercel to access this
+  credentials: true
+}));
 app.use(express.json());
 
-// Connect to MongoDB
+// ---------------------------------------------------------
+// ⚡ NUCLEAR DATABASE CONNECTION (Hardcoded for stability)
+// ---------------------------------------------------------
+// Replace <password> with your REAL password
+const DB_CONNECTION_STRING = "mongodb+srv://aakashchandra505:password1234@sharedcluster.vq1dvx4.mongodb.net/gamified-platform?retryWrites=true&w=majority";
+
+console.log("⏳ Attempting to connect to MongoDB Atlas...");
+
 mongoose
-  .connect(
-    process.env.MONGODB_URI || "mongodb://localhost:27017/coding-platform"
-  )
-  .then(() => console.log("✅ MongoDB Connected"))
-  .catch((err) => console.error("❌ MongoDB Connection Error:", err));
+  .connect(DB_CONNECTION_STRING)
+  .then(() => console.log("✅ MongoDB Connected to CLOUD"))
+  .catch((err) => {
+    console.error("❌ MongoDB Connection Error:", err);
+    // Keep server running so we can see logs
+  });
+// ---------------------------------------------------------
 
 // Import Routes
 const authRoutes = require("./routes/auth");
@@ -24,42 +36,29 @@ const learningRoutes = require("./routes/learning");
 const leaderboardRoutes = require("./routes/leaderboard");
 const userRoutes = require("./routes/user");
 
-// Use Routes - Register them BEFORE 404 handler
+// Use Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/dsa", dsaRoutes);
 app.use("/api/learning", learningRoutes);
 app.use("/api/leaderboard", leaderboardRoutes);
 app.use("/api/user", userRoutes);
-
-console.log("✅ Routes registered:");
-console.log("   - /api/auth (login, signup)");
-console.log("   - /api/dsa (topics, problems, execute)");
-console.log("   - /api/learning (progress)");
-console.log("   - /api/leaderboard");
-console.log("   - /api/user (profile)");
+app.use("/api/dsa", require("./routes/dsa"));
 
 // Health check endpoint
-app.get("/api/health", (req, res) => {
-  res.json({ status: "ok", message: "Server is running" });
+app.get("/", (req, res) => {
+  res.json({ status: "ok", message: "API is running..." });
 });
 
-// 404 handler - MUST be after all routes
+// 404 handler
 app.use((req, res) => {
   console.log(`❌ 404 - Route not found: ${req.method} ${req.path}`);
   res.status(404).json({ error: "Route not found" });
-});
-
-// Error handler
-app.use((err, req, res, next) => {
-  console.error("❌ Server Error:", err);
-  res.status(500).json({ error: "Internal server error" });
 });
 
 // Start server
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`\n🚀 Server running on port ${PORT}`);
-  console.log(`📍 API available at http://localhost:${PORT}/api\n`);
 });
 
 // Handle unhandled rejections

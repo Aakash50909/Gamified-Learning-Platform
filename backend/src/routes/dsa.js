@@ -1,111 +1,45 @@
 const router = require("express").Router();
-const axios = require("axios");
+const Problem = require("../models/Problem");
 const User = require("../models/User");
-const mongoose = require("mongoose");
-const DSAProgress = require("../models/DSAProgress");
-const { DSA_TOPICS, DIFFICULTY_LEVELS } = require("../config/dsaTopics");
 
-// Piston API Configuration
-const PISTON_API = "https://emkc.org/api/v2/piston";
-
-// Language mappings for Piston
-const LANGUAGE_CONFIG = {
-  javascript: { language: "javascript", version: "18.15.0" },
-  python: { language: "python", version: "3.10.0" },
-  java: { language: "java", version: "15.0.2" },
-  cpp: { language: "cpp", version: "10.2.0" },
-  c: { language: "c", version: "10.2.0" },
-};
-
-// Helper function to get file extension
-function getFileExtension(language) {
-  const extensions = {
-    javascript: "js",
-    python: "py",
-    java: "java",
-    cpp: "cpp",
-    c: "c",
-  };
-  return extensions[language] || "txt";
-}
-
-// Helper function to parse sample test cases from GFG format
-function parseSampleTestCases(problem) {
-  try {
-    if (problem.sampleTestCases && Array.isArray(problem.sampleTestCases)) {
-      return problem.sampleTestCases.map((tc) => ({
-        input: tc.input || tc.sampleInput || "",
-        output: tc.output || tc.sampleOutput || "",
-        explanation: tc.explanation || "",
-      }));
-    }
-
-    if (problem.examples && Array.isArray(problem.examples)) {
-      return problem.examples.map((ex) => ({
-        input: ex.input || "",
-        output: ex.output || "",
-        explanation: ex.explanation || "",
-      }));
-    }
-
-    return [
-      {
-        input: "5\n1 2 3 4 5",
-        output: "15",
-        explanation: "Sample test case",
-      },
-    ];
-  } catch (error) {
-    console.error("Error parsing test cases:", error);
-    return [
-      {
-        input: "Sample input",
-        output: "Sample output",
-        explanation: "Test case",
-      },
-    ];
-  }
-}
-
-// GET /api/dsa/topics - Get all DSA topics
+// 1. GET Topics (Grouped by Difficulty/Tag)
 router.get("/topics", async (req, res) => {
-  try {
-    const { userId } = req.query;
-
-    let topicsWithProgress = DSA_TOPICS.map((topic) => ({ ...topic }));
-
-    if (userId) {
-      const progress = await DSAProgress.aggregate([
-        {
-          $match: {
-            userId: userId,
-            completed: true,
-          },
-        },
-        {
-          $group: {
-            _id: "$topic",
-            count: { $sum: 1 },
-            points: { $sum: "$pointsEarned" },
-          },
-        },
-      ]);
-
-      topicsWithProgress = DSA_TOPICS.map((topic) => {
-        const topicProgress = progress.find((p) => p._id === topic.name);
-        return {
-          ...topic,
-          completed: topicProgress?.count || 0,
-          points: topicProgress?.points || 0,
-        };
-      });
-    }
-
-    res.json(topicsWithProgress);
-  } catch (err) {
-    console.error("Topics API Error:", err);
-    res.status(500).json({ error: err.message });
-  }
+  // Hardcoded topics for the demo (Fastest way)
+  const topics = [
+    {
+      id: 1,
+      name: "Arrays",
+      description: "Basic array operations",
+      icon: "📊",
+      color: "from-blue-400 to-blue-600",
+      points: 100,
+    },
+    {
+      id: 2,
+      name: "Linked Lists",
+      description: "Node-based structures",
+      icon: "🔗",
+      color: "from-green-400 to-green-600",
+      points: 200,
+    },
+    {
+      id: 3,
+      name: "Stacks & Queues",
+      description: "LIFO and FIFO",
+      icon: "📚",
+      color: "from-purple-400 to-purple-600",
+      points: 150,
+    },
+    {
+      id: 4,
+      name: "Trees",
+      description: "Hierarchical data",
+      icon: "🌳",
+      color: "from-yellow-400 to-yellow-600",
+      points: 300,
+    },
+  ];
+  res.json(topics);
 });
 
 // GET /api/dsa/problems - Fetch problems from GFG API with fallback
@@ -449,25 +383,13 @@ router.post("/complete", async (req, res) => {
     await progress.save();
 
     const user = await User.findById(userId);
-    if (!user) {
-      return res.status(404).json({ error: "User not found" });
-    }
+    const problem = await Problem.findById(problemId);
 
-    user.dsaPoints = (user.dsaPoints || 0) + pointsToAdd;
+    if (!user || !problem) return res.status(404).json({ error: "Not found" });
 
-    if (!user.dsaStats) {
-      user.dsaStats = {
-        easyCompleted: 0,
-        mediumCompleted: 0,
-        hardCompleted: 0,
-        totalCompleted: 0,
-      };
-    }
-
-    if (difficulty === "Easy") user.dsaStats.easyCompleted += 1;
-    else if (difficulty === "Medium") user.dsaStats.mediumCompleted += 1;
-    else if (difficulty === "Hard") user.dsaStats.hardCompleted += 1;
-
+    // Update Stats
+    user.dsaPoints = (user.dsaPoints || 0) + problem.points;
+    user.dsaStats = user.dsaStats || { totalCompleted: 0 };
     user.dsaStats.totalCompleted += 1;
 
     await user.save();
